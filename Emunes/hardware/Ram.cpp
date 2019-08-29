@@ -1,4 +1,5 @@
 #include "Ram.h"
+#include "Bus.h"
 
 void Ram::Write(uint16_t address, uint8_t byte)
 {
