@@ -2,17 +2,15 @@
 
 #include <cstdint>
 
-#include "Cpu.h"
 #include "Ram.h"
 
 class Bus
 {
 public:
-	Cpu* cpu;
 	Ram* ram;
 
 public:
-	Bus(Cpu* cpu, Ram* ram);
+	Bus(Ram* ram);
 	~Bus();
 
 	uint8_t Read(uint16_t address);

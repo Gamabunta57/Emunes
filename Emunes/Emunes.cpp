@@ -16,9 +16,10 @@ std::string operator+ (std::string string, AddressingMode addressingMode);
 int main()
 {
 
-	Cpu cpu;
+	Cpu* cpu = new Cpu();
 	Ram* ram = new Ram();
-	Bus bus(&cpu, ram);
+	Bus bus(ram);
+	cpu->attachBus(&bus);
 	
 	std::string asmString = "a9 01 8d 00 02 a9 05 8d 01 02 a9 08 8d 02 02";
 	/*
@@ -37,7 +38,11 @@ int main()
 	while (asmStream >> byteCode)
 		bus.Write(address++, std::stoi(byteCode,NULL,16));
 	
-	std::cout << disassemble(ram, &cpu, 0, address);
+	std::cout << disassemble(ram, cpu, 0, address);
+
+	delete cpu;
+	delete ram;
+
 	return 0;
 }
 

@@ -1,9 +1,8 @@
 #include "Bus.h"
-#include "Cpu.h"
 #include "Ram.h"
 
-Bus::Bus(Cpu* cpu, Ram* ram)
-	:cpu(cpu), ram(ram)
+Bus::Bus(Ram* ram)
+	:ram(ram)
 {
 };
 

@@ -3,6 +3,8 @@
 #include <array>
 #include <string>
 
+#include "Bus.h"
+
 
 enum AddressingMode {
 	Immediate,
@@ -66,9 +68,12 @@ public:
 	StateFlags status;
 
 	std::array<Instruction, 256> instructionSet;
+	Bus* bus;
 
 public:
 	Cpu();
 	~Cpu();
+
+	void attachBus(Bus* bus);
 	Instruction getInstruction(uint16_t address);
 };
