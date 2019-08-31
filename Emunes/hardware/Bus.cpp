@@ -1,12 +1,11 @@
 #include "Bus.h"
-#include "Ram.h"
 
 Bus::Bus(Ram* ram)
 	:ram(ram)
 {
 };
 
-Bus::~Bus() {}
+Bus::~Bus() = default;
 
 uint8_t Bus::Read(uint16_t address)
 {

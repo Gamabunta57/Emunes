@@ -19,7 +19,7 @@ int main()
 	Ram* ram = new Ram();
 	Bus bus(ram);
 	cpu->attachBus(&bus);
-	
+	cpu->reset();
 	
 	/* meaningless program to test all the different addressing mode available 
 	0000 START  INX             E8

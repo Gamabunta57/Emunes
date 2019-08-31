@@ -10,7 +10,7 @@ public:
 	Ram* ram;
 
 public:
-	Bus(Ram* ram);
+	explicit Bus(Ram* ram);
 	~Bus();
 
 	uint8_t Read(uint16_t address);

@@ -3,57 +3,12 @@
 #include <array>
 #include <string>
 
+#include "types/ProgramCounter.h";
+#include "types/StackPointer.h";
+#include "types/Instruction.h";
+#include "types/AddressingMode.h";
+
 #include "Bus.h"
-
-
-enum AddressingMode {
-	Immediate,
-	Absolute,
-	ZeroPage,
-	Accumulator,
-	Implied,
-	IndexedX,
-	IndexedY,
-	ZeroPageX,
-	AbsoluteX,
-	AbsoluteY,
-	Relative,
-	Indirect,
-	ZeroPageY
-};
-
-struct Instruction {
-	//uint8_t opcode; implied by the index in the instruction set
-	std::string mnemonic;
-	AddressingMode addressingMode;
-	uint8_t memoryRequirement; // byte code size (1, 2 or 3)
-	uint8_t executionTime; // in machine cycle
-};
-
-union ProgramCounter
-{
-	uint16_t address;
-	uint8_t PCL : 8;
-	uint8_t PCH : 8;
-};
-
-union StackPointer
-{
-	uint16_t full;
-	uint8_t stack : 8;
-	uint8_t overflow : 1; // idk if it's the right term here
-};
-
-union byte{
-    uint8_t  value;
-    int8_t signedValue;
-};
-
-union Address{
-    uint16_t full;
-    byte LL;
-    byte HH;
-};
 
 union StateFlags
 {
@@ -89,11 +44,9 @@ public:
 	~Cpu();
 
 	void attachBus(Bus* bus);
-	Instruction getInstruction(const uint16_t address);
+	Instruction getInstruction(const uint16_t &address);
 	void fetchInstructionBytes(const Instruction &instruction, const uint16_t &address, uint8_t* byteFetched);
 	void reset();
-
 	void run1Instruction();
-
-    uint16_t fetchArgument(const AddressingMode mode, const uint8_t *instructionBytes);
+    uint16_t fetchArgument(const AddressingMode &mode, const uint8_t *instructionBytes);
 };

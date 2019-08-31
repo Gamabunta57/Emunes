@@ -1,5 +1,5 @@
 #include "Cpu.h"
-#include "Bus.h"
+#include "types/RegisterAddress.h"
 
 Cpu::Cpu()
 :A(0),X(0),Y(0),PC{0},S{0x20}, status{0},bus(nullptr), instructionSet{{
@@ -25,7 +25,7 @@ Cpu::Cpu()
 Cpu::~Cpu() = default;
 
 
-Instruction Cpu::getInstruction(const uint16_t address) {
+Instruction Cpu::getInstruction(const uint16_t &address) {
 	return this->instructionSet[address];
 }
 
@@ -54,9 +54,10 @@ void Cpu::run1Instruction() {
 	uint8_t instructionBytes[3];
 	this->fetchInstructionBytes(instruction, PC.address, instructionBytes);
 	uint16_t argument = this->fetchArgument(instruction.addressingMode, instructionBytes);
+
 }
 
-uint16_t Cpu::fetchArgument(const AddressingMode mode, const uint8_t* instructionBytes){
+uint16_t Cpu::fetchArgument(const AddressingMode &mode, const uint8_t* instructionBytes){
     Address addr{0};
     switch (mode){
         case Implied:
