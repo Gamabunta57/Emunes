@@ -88,12 +88,12 @@ public:
 	Cpu();
 	~Cpu();
 
-	inline void attachBus(Bus* bus);
-	inline Instruction getInstruction(const uint16_t address);
-	uint8_t* fetchInstructionBytes(const Instruction instruction, const uint16_t address);
-	inline void reset();
+	void attachBus(Bus* bus);
+	Instruction getInstruction(const uint16_t address);
+	void fetchInstructionBytes(const Instruction &instruction, const uint16_t &address, uint8_t* byteFetched);
+	void reset();
 
 	void run1Instruction();
 
-    uint16_t fetchArgument(AddressingMode mode, uint8_t *instructionBytes);
+    uint16_t fetchArgument(const AddressingMode mode, const uint8_t *instructionBytes);
 };

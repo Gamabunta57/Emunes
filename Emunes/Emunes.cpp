@@ -10,8 +10,8 @@
 
 std::string disassemble(Ram* ram, Cpu* cpu, uint16_t startAdress, uint16_t endAddress);
 std::string getHexString(int value, int size = 2);
-std::string getAdressingModePrefix(AddressingMode mode);
-std::string getAdressingModeSuffix(AddressingMode mode);
+std::string getAddressingModePrefix(AddressingMode mode);
+std::string getAddressingModeSuffix(AddressingMode mode);
 std::string operator+ (std::string string, AddressingMode addressingMode);
 
 int main()
@@ -84,7 +84,8 @@ std::string disassemble(Ram* ram, Cpu* cpu,  uint16_t startAdress, uint16_t endA
 			args = '$' + args;
 		}
 
-		args = getAdressingModePrefix(instruction.addressingMode) + args + getAdressingModeSuffix(instruction.addressingMode);
+		args = getAddressingModePrefix(instruction.addressingMode) + args +
+                getAddressingModeSuffix(instruction.addressingMode);
 		args.resize(12, ' ');
 
 		std::string hexAddress = getHexString(currentAddress, 4);
@@ -103,7 +104,7 @@ std::string getHexString(int value, int size) {
 }
 
 
-std::string getAdressingModePrefix(AddressingMode mode) {
+std::string getAddressingModePrefix(AddressingMode mode) {
 	switch (mode)
 	{
 	case Indirect:
@@ -118,10 +119,12 @@ std::string getAdressingModePrefix(AddressingMode mode) {
 	case ZeroPageX:
 	case ZeroPageY:		return "*";
 
-	};
-	return "";
+	default:
+	    return "";
+
+	}
 }
-std::string getAdressingModeSuffix(AddressingMode mode) {
+std::string getAddressingModeSuffix(AddressingMode mode) {
 	switch (mode)
 	{
 	case Indirect:		return ")";
@@ -136,8 +139,10 @@ std::string getAdressingModeSuffix(AddressingMode mode) {
 	case ZeroPageY:
 	case AbsoluteY:		return ",Y";
 
-	};
-	return "";
+	default:
+	    return "";
+
+	}
 }
 
 std::string operator+ (std::string string, AddressingMode addressingMode)

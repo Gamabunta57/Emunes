@@ -24,25 +24,22 @@ Cpu::Cpu()
       }}
 {}
 
-Cpu::~Cpu() {}
+Cpu::~Cpu() = default;
 
 
 Instruction Cpu::getInstruction(const uint16_t address) {
 	return this->instructionSet[address];
 }
 
-uint8_t* Cpu::fetchInstructionBytes(const Instruction instruction, const uint16_t address) {
-	uint8_t fetched[3];
-	fetched[0] = this->bus->Read(address);
+void Cpu::fetchInstructionBytes(const Instruction &instruction, const uint16_t &address, uint8_t* byteFetched) {
+	byteFetched[0] = this->bus->Read(address);
 	int memorySize = instruction.memoryRequirement;
 
 	if (memorySize > 1)
-		fetched[1] = this->bus->Read(address+1);
+        byteFetched[1] = this->bus->Read(address+1);
 
 	if (memorySize > 2)
-		fetched[2] = this->bus->Read(address+2);
-
-	return fetched;
+        byteFetched[2] = this->bus->Read(address+2);
 }
 
 void Cpu::attachBus(Bus* bus){
@@ -56,11 +53,12 @@ void Cpu::reset() {
 
 void Cpu::run1Instruction() {
 	Instruction instruction = this->getInstruction(PC.address);
-	uint8_t* instructionBytes = this->fetchInstructionBytes(instruction, PC.address);
+	uint8_t instructionBytes[3];
+	this->fetchInstructionBytes(instruction, PC.address, instructionBytes);
 	uint16_t argument = this->fetchArgument(instruction.addressingMode, instructionBytes);
 }
 
-uint16_t Cpu::fetchArgument(AddressingMode mode, uint8_t* instructionBytes){
+uint16_t Cpu::fetchArgument(const AddressingMode mode, const uint8_t* instructionBytes){
     Address addr{0};
     switch (mode){
         case Implied:
