@@ -150,21 +150,39 @@ uint8_t Cpu::pullFromStack() {
 };
 
 void Cpu::ADC(MnemonicArgument arg) {
-    A += bus->Read(arg.value.word) + status.C;
+	uint8_t oldA = A;
+
+	Word w{ 0 };
+	w.word = arg.value.LL.value;
+	w.LL.value += A + status.C;
+
+	status.C = w.HH.value > 0;
+	status.V = (~(oldA ^ arg.value.LL.value) & (oldA ^ w.LL.value)) & 0x0080;
+
+	A = w.LL.value;
+
+	status.Z = A == 0;
+	status.N = A & 0x80;
 }
 
 void Cpu::AND(MnemonicArgument arg) {
     A &= arg.value.LL.value;
+
+	status.Z = A == 0;
+	status.N = A & 0x80;
 }
 
 void Cpu::ASL(MnemonicArgument arg) {
-    if(arg.isAcu)
-        A <<= 1;
-    else{
-        uint8_t value = bus->Read(arg.value.word);
-        value <<= 1;
-        bus->Write(arg.value.word, value);
-    }
+	uint8_t value = arg.isAcu ? A : arg.value.LL.value;
+	status.C = value & 0x80;
+	value <<= 1;
+	status.Z = value == 0;
+	status.N = value & 0x80;
+
+	if (arg.isAcu)
+		A = value;
+	else
+		bus->Write(arg.value.word, value);
 }
 
 void Cpu::BCC(MnemonicArgument arg) {
@@ -204,12 +222,11 @@ void Cpu::BPL(MnemonicArgument arg) {
 }
 
 void Cpu::BRK(MnemonicArgument arg) {
-    //TODO : check what push means exactly
     //interrupt
     status.I = 1;
     Word nextAddress;
     nextAddress.word = PC.address;
-    nextAddress.word+=2;
+    nextAddress.word+=2;//TODO::check that
     pushOnStack(nextAddress.LL.value);
     pushOnStack(nextAddress.HH.value);
     pushOnStack(status.state);
@@ -242,50 +259,74 @@ void Cpu::CLV(MnemonicArgument arg) {
 }
 
 void Cpu::CMP(MnemonicArgument arg) {
-    uint8_t value = A - arg.value.LL.value;
-    //TODO : setflags
+	status.Z = A == arg.value.LL.value;
+	status.N = A < arg.value.LL.value;
+	status.C = A > arg.value.LL.value;
 }
 
 void Cpu::CPX(MnemonicArgument arg) {
-    uint8_t value = X - arg.value.LL.value;
-    //TODO : setflags
+	status.Z = X == arg.value.LL.value;
+	status.N = X < arg.value.LL.value;
+	status.C = X > arg.value.LL.value;
 }
 
 void Cpu::CPY(MnemonicArgument arg) {
-    uint8_t value = Y - arg.value.LL.value;
-    //TODO : setflags
+	status.Z = Y == arg.value.LL.value;
+	status.N = Y < arg.value.LL.value;
+	status.C = Y > arg.value.LL.value;
 }
 
 void Cpu::DEC(MnemonicArgument arg) {
     uint8_t value = bus->Read(arg.value.word);
     value--;
     bus->Write(arg.value.word, value);
+
+	status.N = value & 0x80;
+	status.Z = value == 0;
 }
 
 void Cpu::DEX(MnemonicArgument arg) {
     X--;
+
+	status.N = X & 0x80;
+	status.Z = X == 0;
 }
 
 void Cpu::DEY(MnemonicArgument arg) {
     Y--;
+
+	status.N = Y & 0x80;
+	status.Z = Y == 0;
 }
 
 void Cpu::EOR(MnemonicArgument arg) {
     A ^= bus->Read(arg.value.word);
+
+	status.N = A & 0x80;
+	status.Z = A == 0;
 }
 
 void Cpu::INC(MnemonicArgument arg) {
     uint8_t value = bus->Read(arg.value.word);
     value++;
     bus->Write(arg.value.word, value);
+
+	status.N = value & 0x80;
+	status.Z = value == 0;
 }
 
 void Cpu::INX(MnemonicArgument arg) {
     X++;
+
+	status.N = X & 0x80;
+	status.Z = X == 0;
 }
 
 void Cpu::INY(MnemonicArgument arg) {
     Y++;
+
+	status.N = Y & 0x80;
+	status.Z = Y == 0;
 }
 
 void Cpu::JMP(MnemonicArgument arg) {
@@ -293,31 +334,48 @@ void Cpu::JMP(MnemonicArgument arg) {
 }
 
 void Cpu::JSR(MnemonicArgument arg) {
-    PC.address = arg.value.word;
-    //TODO : save arg.value.HH.value;
+   
+	Word nextAddress;
+	nextAddress.word = PC.address;
+	nextAddress.word += 2;
+	pushOnStack(nextAddress.LL.value);
+	pushOnStack(nextAddress.HH.value);
+
+	PC.address = arg.value.word;
 }
 
 void Cpu::LDA(MnemonicArgument arg) {
-    A = bus->Read(arg.value.word);
+    A = arg.value.LL.value;
+
+	status.N = A & 0x80;
+	status.Z = A == 0;
 }
 
 void Cpu::LDX(MnemonicArgument arg) {
-    X = bus->Read(arg.value.word);
+    X = arg.value.LL.value;
+
+	status.N = X & 0x80;
+	status.Z = X == 0;
 }
 
 void Cpu::LDY(MnemonicArgument arg) {
-    Y = bus->Read(arg.value.word);
+    Y = arg.value.LL.value;
+
+	status.N = Y & 0x80;
+	status.Z = Y == 0;
 }
 
 void Cpu::LSR(MnemonicArgument arg) {
-    if(arg.isAcu)
-        A >>= 1;
-    else{
-        uint8_t value = bus->Read(arg.value.word);
-        value >>=1;
-        bus->Write(arg.value.word, value);
-    }
-    status.N = 0;
+	uint8_t value = arg.isAcu ? A : arg.value.LL.value;
+	status.C = value & 0x01;
+	value >>= 1;
+	status.Z = value == 0;
+	status.N = 0;
+
+	if (arg.isAcu)
+		A = value;
+	else
+		bus->Write(arg.value.word, value);
 }
 
 void Cpu::NOP(MnemonicArgument arg) {
@@ -325,7 +383,10 @@ void Cpu::NOP(MnemonicArgument arg) {
 }
 
 void Cpu::ORA(MnemonicArgument arg) {
-    A |= bus->Read(arg.value.word);
+    A |= arg.value.LL.value;
+
+	status.Z = A == 0;
+	status.N = A & 0x80;
 }
 
 void Cpu::PHA(MnemonicArgument arg) {
@@ -338,6 +399,9 @@ void Cpu::PHP(MnemonicArgument arg) {
 
 void Cpu::PLA(MnemonicArgument arg) {
     A = pullFromStack();
+
+	status.Z = A == 0;
+	status.N = A & 0x80;
 }
 
 void Cpu::PLP(MnemonicArgument arg) {
@@ -345,28 +409,33 @@ void Cpu::PLP(MnemonicArgument arg) {
 }
 
 void Cpu::ROL(MnemonicArgument arg) {
-    uint8_t value = arg.isAcu ? A : bus->Read(arg.value.word);
-    bool isMSBSet = value & 0x80;
-    value <<= 1;
-    value &= (0xFE + isMSBSet);
+	uint8_t value = arg.isAcu ? A : arg.value.LL.value;
+	uint8_t isCurrentCarrySet = status.C;
+	status.C = value & 0x80;
+	value <<= 1;
+	value += isCurrentCarrySet;
+	status.Z = value == 0;
+	status.N = value & 0x80;
 
-    if(arg.isAcu)
-        A = value;
-    else
-        bus->Write(arg.value.word, value);
+	if (arg.isAcu)
+		A = value;
+	else
+		bus->Write(arg.value.word, value);
 }
 
 void Cpu::ROR(MnemonicArgument arg) {
+	uint8_t value = arg.isAcu ? A : arg.value.LL.value;
+	uint8_t isCurrentCarrySet = status.C << 7;
+	status.C = value & 0x01;
+	value >>= 1;
+	value += isCurrentCarrySet;
+	status.Z = value == 0;
+	status.N = value & 0x80;
 
-    uint8_t value = arg.isAcu ? A : bus->Read(arg.value.word);
-    uint8_t isMSBSet = (value & 0x01) << 7;
-    value >>= 1;
-    value &= (0x7F + isMSBSet);
-
-    if(arg.isAcu)
-        A = value;
-    else
-        bus->Write(arg.value.word, value);
+	if (arg.isAcu)
+		A = value;
+	else
+		bus->Write(arg.value.word, value);
 }
 
 void Cpu::RTI(MnemonicArgument arg) {
@@ -382,7 +451,14 @@ void Cpu::RTS(MnemonicArgument arg) {
 }
 
 void Cpu::SBC(MnemonicArgument arg) {
-    A -= bus->Read(arg.value.word) - status.C;
+	uint8_t value = A - arg.value.LL.value - status.C;
+	status.V = value > A;
+	status.C = status.C;
+
+    A = value;
+
+	status.Z = A == 0;
+	status.N = A & 0x80;
 }
 
 void Cpu::SEC(MnemonicArgument arg) {
@@ -411,18 +487,30 @@ void Cpu::STY(MnemonicArgument arg) {
 
 void Cpu::TAX(MnemonicArgument arg) {
     X = A;
+
+	status.Z = X == 0;
+	status.N = X & 0x80;
 }
 
 void Cpu::TAY(MnemonicArgument arg) {
     Y = A;
+
+	status.Z = Y == 0;
+	status.N = Y & 0x80;
 }
 
 void Cpu::TSX(MnemonicArgument arg) {
     X = S.stack;
+
+	status.Z = X == 0;
+	status.N = X & 0x80;
 }
 
 void Cpu::TXA(MnemonicArgument arg) {
     A = X;
+
+	status.Z = A == 0;
+	status.N = A & 0x80;
 }
 
 void Cpu::TXS(MnemonicArgument arg) {
@@ -431,4 +519,7 @@ void Cpu::TXS(MnemonicArgument arg) {
 
 void Cpu::TYA(MnemonicArgument arg) {
     A = Y;
+
+	status.Z = A == 0;
+	status.N = A & 0x80;
 }

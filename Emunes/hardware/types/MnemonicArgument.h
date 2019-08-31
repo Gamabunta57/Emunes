@@ -16,6 +16,7 @@ union Word{
 struct MnemonicArgument{
     Word value;
     bool isAcu;
+	//TODO : add address for operands that need it
 };
 
 #endif //EMUNES_MNEMONICARGUMENT_H
