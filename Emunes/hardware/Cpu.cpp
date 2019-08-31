@@ -1,10 +1,8 @@
-#include <string>
-
 #include "Cpu.h"
 #include "Bus.h"
 
 Cpu::Cpu()
-:A(0),X(0),Y(0),PC{0},S{0}, status{0},bus(nullptr), instructionSet{{
+:A(0),X(0),Y(0),PC{0},S{0x20}, status{0},bus(nullptr), instructionSet{{
 		{ "BRK", Implied,  1, 7 }, { "ORA", IndexedX, 2, 6 }, { "???", Absolute, 0, 0 }, { "???", Absolute, 0, 0 }, { "???", Absolute, 0, 0 }, { "ORA", ZeroPage, 2, 3 }, { "ASL", ZeroPage, 2, 5 }, { "???", Absolute, 0, 0 }, { "PHP", Implied, 1, 3 }, { "ORA", Immediate, 2, 2 }, { "ASL", Accumulator,1, 2 }, { "???", Absolute, 0, 0 }, { "???", Absolute, 0, 0 }, { "ORA", Absolute, 3, 4 }, { "ASL", Absolute, 3, 6 }, { "???", Absolute, 0, 0 },
 		{ "BPL", Relative, 2, 2 }, { "ORA", IndexedY, 2, 5 }, { "???", Absolute, 0, 0 }, { "???", Absolute, 0, 0 }, { "???", Absolute, 0, 0 }, { "ORA", ZeroPageX,2, 4 }, { "ASL", ZeroPageX,2, 6 }, { "???", Absolute, 0, 0 }, { "CLC", Implied, 1, 2 }, { "ORA", AbsoluteY, 3, 4 }, { "???", Absolute,   0, 0 }, { "???", Absolute, 0, 0 }, { "???", Absolute, 0, 0 }, { "ORA", AbsoluteX,3, 4 }, { "ASL", AbsoluteX,3, 7 }, { "???", Absolute, 0, 0 },
 		{ "JSR", Absolute, 3, 6 }, { "AND", IndexedX, 2, 6 }, { "???", Absolute, 0, 0 }, { "???", Absolute, 0, 0 }, { "BIT", ZeroPage, 2, 3 }, { "AND", ZeroPage, 2, 3 }, { "ROL", ZeroPage, 2, 5 }, { "???", Absolute, 0, 0 }, { "PLP", Implied, 1, 4 }, { "AND", Immediate, 2, 2 }, { "ROL", Accumulator,1, 2 }, { "???", Absolute, 0, 0 }, { "BIT", Absolute, 3, 4 }, { "AND", Absolute, 3, 4 }, { "ROL", Absolute, 3, 6 }, { "???", Absolute, 0, 0 },

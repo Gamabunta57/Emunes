@@ -10,13 +10,11 @@
 
 std::string disassemble(Ram* ram, Cpu* cpu, uint16_t startAdress, uint16_t endAddress);
 std::string getHexString(int value, int size = 2);
-std::string getAddressingModePrefix(AddressingMode mode);
-std::string getAddressingModeSuffix(AddressingMode mode);
+std::string getAddressingModeIndication(AddressingMode mode, std::string args);
 std::string operator+ (std::string string, AddressingMode addressingMode);
 
 int main()
 {
-
 	Cpu* cpu = new Cpu();
 	Ram* ram = new Ram();
 	Bus bus(ram);
@@ -69,7 +67,7 @@ std::string disassemble(Ram* ram, Cpu* cpu,  uint16_t startAdress, uint16_t endA
 		std::string byteString = getHexString(opcode);
 		Instruction instruction = cpu->getInstruction(opcode);
 
-		std::string args = "";
+		std::string args;
 		if (instruction.memoryRequirement > 1) {
 			uint8_t byte = ram->Read(currentAddress + 1);
 			args = getHexString(byte);
@@ -84,8 +82,7 @@ std::string disassemble(Ram* ram, Cpu* cpu,  uint16_t startAdress, uint16_t endA
 			args = '$' + args;
 		}
 
-		args = getAddressingModePrefix(instruction.addressingMode) + args +
-                getAddressingModeSuffix(instruction.addressingMode);
+		args = getAddressingModeIndication(instruction.addressingMode,args);
 		args.resize(12, ' ');
 
 		std::string hexAddress = getHexString(currentAddress, 4);
@@ -103,46 +100,27 @@ std::string getHexString(int value, int size) {
 	return ss.str();
 }
 
+std::string getAddressingModeIndication(AddressingMode mode, std::string args){
+    switch (mode)
+    {
+        case Relative: return args;
+        case Absolute: return args;
 
-std::string getAddressingModePrefix(AddressingMode mode) {
-	switch (mode)
-	{
-	case Indirect:
-	case IndexedX:
-	case IndexedY:		return "(";
+        case Accumulator: return "A";
+        case Immediate: return "#"+args;
+        case AbsoluteX: return args + ",X";
+        case AbsoluteY: return args + ",Y";
+        case ZeroPage: return "*" + args;
+        case ZeroPageX: return "*" + args + ",X";
+        case ZeroPageY: return  "*" + args + ",Y";
+        case IndexedX: return "("+args+",X)";
+        case IndexedY: return"("+args+"),Y";
+        case Indirect: return "("+args+")";
 
-	case Accumulator:	return "A";
+        default:
+            return "";
 
-	case Immediate:		return "#";
-
-	case ZeroPage:
-	case ZeroPageX:
-	case ZeroPageY:		return "*";
-
-	default:
-	    return "";
-
-	}
-}
-std::string getAddressingModeSuffix(AddressingMode mode) {
-	switch (mode)
-	{
-	case Indirect:		return ")";
-
-	case IndexedX:		return ",X)";
-
-	case IndexedY:		return "),Y";
-
-	case ZeroPageX:
-	case AbsoluteX:		return ",X";
-
-	case ZeroPageY:
-	case AbsoluteY:		return ",Y";
-
-	default:
-	    return "";
-
-	}
+    }
 }
 
 std::string operator+ (std::string string, AddressingMode addressingMode)
