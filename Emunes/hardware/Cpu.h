@@ -44,6 +44,17 @@ union StackPointer
 	uint8_t overflow : 1; // idk if it's the right term here
 };
 
+union byte{
+    uint8_t  value;
+    int8_t signedValue;
+};
+
+union Address{
+    uint16_t full;
+    byte LL;
+    byte HH;
+};
+
 union StateFlags
 {
 	uint8_t state;
@@ -83,4 +94,6 @@ public:
 	inline void reset();
 
 	void run1Instruction();
+
+    uint16_t fetchArgument(AddressingMode mode, uint8_t *instructionBytes);
 };

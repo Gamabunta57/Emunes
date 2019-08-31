@@ -57,5 +57,80 @@ void Cpu::reset() {
 void Cpu::run1Instruction() {
 	Instruction instruction = this->getInstruction(PC.address);
 	uint8_t* instructionBytes = this->fetchInstructionBytes(instruction, PC.address);
+	uint16_t argument = this->fetchArgument(instruction.addressingMode, instructionBytes);
+}
 
+uint16_t Cpu::fetchArgument(AddressingMode mode, uint8_t* instructionBytes){
+    Address addr{0};
+    switch (mode){
+        case Implied:
+        case Accumulator:
+        case Immediate:
+            return 0;
+        case Absolute:{
+            addr.LL.value = instructionBytes[1];
+            addr.HH.value = instructionBytes[2];
+            return addr.full;
+        }
+        case ZeroPage:{
+            addr.LL.value = instructionBytes[1];
+            return this->bus->Read(addr.full);
+        }
+        case ZeroPageX:{
+            addr.LL.value = instructionBytes[1] + this->X;
+            addr.HH.value = 0;
+            return this->bus->Read(addr.full);
+        }
+        case ZeroPageY:{
+            addr.LL.value = instructionBytes[1] + this->Y;
+            addr.HH.value = 0;
+            return this->bus->Read(addr.full);
+        }
+        case AbsoluteX:{
+            addr.HH.value = instructionBytes[2];
+            addr.LL.value = instructionBytes[1];
+            addr.full +=  this->X + this->status.C;
+            return this->bus->Read(addr.full);
+        }
+        case AbsoluteY:{
+            addr.HH.value = instructionBytes[2];
+            addr.LL.value = instructionBytes[1];
+            addr.full +=  this->Y + this->status.C;
+            return this->bus->Read(addr.full);
+        }
+        case Relative:{
+            addr.LL.value = instructionBytes[1];
+            return this->PC.address + addr.LL.signedValue;
+        }
+        case Indirect:{
+            Address indirect{0};
+            indirect.LL.value = instructionBytes[1];
+            indirect.HH.value = instructionBytes[2];
+
+            addr.LL.value = this->bus->Read(indirect.full);
+            addr.HH.value = this->bus->Read(indirect.full + 1);
+
+            return this->bus->Read(addr.full);
+        }
+        case IndexedX:{
+            Address indirect{0};
+            indirect.LL.value = instructionBytes[1] + this->X;
+            indirect.HH.value = 0;
+
+            addr.LL.value = this->bus->Read(indirect.full);
+            addr.HH.value = this->bus->Read(indirect.full + 1);
+
+            return this->bus->Read(addr.full);
+        }
+        case IndexedY:{
+            Address indirect{0};
+            indirect.LL.value = instructionBytes[1];
+            indirect.HH.value = 0;
+
+            addr.LL.value = this->bus->Read(indirect.full);
+            addr.HH.value = this->bus->Read(indirect.full + 1);
+
+            return this->bus->Read(addr.full + this->Y + this->status.C);
+        }
+    }
 }
