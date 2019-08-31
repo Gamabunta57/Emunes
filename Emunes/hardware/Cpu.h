@@ -3,10 +3,11 @@
 #include <array>
 #include <string>
 
-#include "types/ProgramCounter.h";
-#include "types/StackPointer.h";
-#include "types/Instruction.h";
-#include "types/AddressingMode.h";
+#include "types/ProgramCounter.h"
+#include "types/StackPointer.h"
+#include "types/Instruction.h"
+#include "types/AddressingMode.h"
+#include "types/MnemonicArgument.h"
 
 #include "Bus.h"
 
@@ -49,4 +50,64 @@ public:
 	void reset();
 	void run1Instruction();
     uint16_t fetchArgument(const AddressingMode &mode, const uint8_t *instructionBytes);
+
+    void pushOnStack(uint8_t value);
+    uint8_t pullFromStack();
+
+    void ADC(MnemonicArgument arg);
+    void AND(MnemonicArgument arg);
+    void ASL(MnemonicArgument arg);
+    void BCC(MnemonicArgument arg);
+    void BCS(MnemonicArgument arg);
+    void BEQ(MnemonicArgument arg);
+    void BIT(MnemonicArgument arg);
+    void BMI(MnemonicArgument arg);
+    void BNE(MnemonicArgument arg);
+    void BPL(MnemonicArgument arg);
+    void BRK(MnemonicArgument arg);
+    void BVC(MnemonicArgument arg);
+    void BVS(MnemonicArgument arg);
+    void CLC(MnemonicArgument arg);
+    void CLD(MnemonicArgument arg);
+    void CLI(MnemonicArgument arg);
+    void CLV(MnemonicArgument arg);
+    void CMP(MnemonicArgument arg);
+    void CPX(MnemonicArgument arg);
+    void CPY(MnemonicArgument arg);
+    void DEC(MnemonicArgument arg);
+    void DEX(MnemonicArgument arg);
+    void DEY(MnemonicArgument arg);
+    void EOR(MnemonicArgument arg);
+    void INC(MnemonicArgument arg);
+    void INX(MnemonicArgument arg);
+    void INY(MnemonicArgument arg);
+    void JMP(MnemonicArgument arg);
+    void JSR(MnemonicArgument arg);
+    void LDA(MnemonicArgument arg);
+    void LDX(MnemonicArgument arg);
+    void LDY(MnemonicArgument arg);
+    void LSR(MnemonicArgument arg);
+    void NOP(MnemonicArgument arg);
+    void ORA(MnemonicArgument arg);
+    void PHA(MnemonicArgument arg);
+    void PHP(MnemonicArgument arg);
+    void PLA(MnemonicArgument arg);
+    void PLP(MnemonicArgument arg);
+    void ROL(MnemonicArgument arg);
+    void ROR(MnemonicArgument arg);
+    void RTI(MnemonicArgument arg);
+    void RTS(MnemonicArgument arg);
+    void SBC(MnemonicArgument arg);
+    void SEC(MnemonicArgument arg);
+    void SED(MnemonicArgument arg);
+    void SEI(MnemonicArgument arg);
+    void STA(MnemonicArgument arg);
+    void STX(MnemonicArgument arg);
+    void STY(MnemonicArgument arg);
+    void TAX(MnemonicArgument arg);
+    void TAY(MnemonicArgument arg);
+    void TSX(MnemonicArgument arg);
+    void TXA(MnemonicArgument arg);
+    void TXS(MnemonicArgument arg);
+    void TYA(MnemonicArgument arg);
 };

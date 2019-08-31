@@ -5,6 +5,8 @@
 #ifndef EMUNES_INSTRUCTION_H
 #define EMUNES_INSTRUCTION_H
 
+#include "AddressingMode.h";
+
 struct Instruction {
     //uint8_t opcode; implied by the index in the instruction set
     std::string mnemonic;

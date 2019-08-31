@@ -26,18 +26,18 @@ Cpu::~Cpu() = default;
 
 
 Instruction Cpu::getInstruction(const uint16_t &address) {
-	return this->instructionSet[address];
+	return instructionSet[address];
 }
 
 void Cpu::fetchInstructionBytes(const Instruction &instruction, const uint16_t &address, uint8_t* byteFetched) {
-	byteFetched[0] = this->bus->Read(address);
+	byteFetched[0] = bus->Read(address);
 	int memorySize = instruction.memoryRequirement;
 
 	if (memorySize > 1)
-        byteFetched[1] = this->bus->Read(address+1);
+        byteFetched[1] = bus->Read(address+1);
 
 	if (memorySize > 2)
-        byteFetched[2] = this->bus->Read(address+2);
+        byteFetched[2] = bus->Read(address+2);
 }
 
 void Cpu::attachBus(Bus* bus){
@@ -45,15 +45,16 @@ void Cpu::attachBus(Bus* bus){
 }
 
 void Cpu::reset() {
-	PC.PCL = this->bus->Read(RESET_VECTOR_ADDR);
-	PC.PCH = this->bus->Read(RESET_VECTOR_ADDR + 1);
+	PC.PCL = bus->Read(RESET_VECTOR_ADDR);
+	PC.PCH = bus->Read(RESET_VECTOR_ADDR + 1);
+	S.full = 0x00FF;
 }
 
 void Cpu::run1Instruction() {
-	Instruction instruction = this->getInstruction(PC.address);
+	Instruction instruction = getInstruction(PC.address);
 	uint8_t instructionBytes[3];
-	this->fetchInstructionBytes(instruction, PC.address, instructionBytes);
-	uint16_t argument = this->fetchArgument(instruction.addressingMode, instructionBytes);
+	fetchInstructionBytes(instruction, PC.address, instructionBytes);
+	uint16_t argument = fetchArgument(instruction.addressingMode, instructionBytes);
 
 }
 
@@ -71,63 +72,363 @@ uint16_t Cpu::fetchArgument(const AddressingMode &mode, const uint8_t* instructi
         }
         case ZeroPage:{
             addr.LL.value = instructionBytes[1];
-            return this->bus->Read(addr.full);
+            return bus->Read(addr.full);
         }
         case ZeroPageX:{
-            addr.LL.value = instructionBytes[1] + this->X;
+            addr.LL.value = instructionBytes[1] + X;
             addr.HH.value = 0;
-            return this->bus->Read(addr.full);
+            return bus->Read(addr.full);
         }
         case ZeroPageY:{
-            addr.LL.value = instructionBytes[1] + this->Y;
+            addr.LL.value = instructionBytes[1] + Y;
             addr.HH.value = 0;
-            return this->bus->Read(addr.full);
+            return bus->Read(addr.full);
         }
         case AbsoluteX:{
             addr.HH.value = instructionBytes[2];
             addr.LL.value = instructionBytes[1];
-            addr.full +=  this->X + this->status.C;
-            return this->bus->Read(addr.full);
+            addr.full +=  X + status.C;
+            return bus->Read(addr.full);
         }
         case AbsoluteY:{
             addr.HH.value = instructionBytes[2];
             addr.LL.value = instructionBytes[1];
-            addr.full +=  this->Y + this->status.C;
-            return this->bus->Read(addr.full);
+            addr.full +=  Y + status.C;
+            return bus->Read(addr.full);
         }
         case Relative:{
             addr.LL.value = instructionBytes[1];
-            return this->PC.address + addr.LL.signedValue;
+            return PC.address + addr.LL.signedValue;
         }
         case Indirect:{
             Address indirect{0};
             indirect.LL.value = instructionBytes[1];
             indirect.HH.value = instructionBytes[2];
 
-            addr.LL.value = this->bus->Read(indirect.full);
-            addr.HH.value = this->bus->Read(indirect.full + 1);
+            addr.LL.value = bus->Read(indirect.full);
+            addr.HH.value = bus->Read(indirect.full + 1);
 
-            return this->bus->Read(addr.full);
+            return bus->Read(addr.full);
         }
         case IndexedX:{
             Address indirect{0};
-            indirect.LL.value = instructionBytes[1] + this->X;
+            indirect.LL.value = instructionBytes[1] + X;
             indirect.HH.value = 0;
 
-            addr.LL.value = this->bus->Read(indirect.full);
-            addr.HH.value = this->bus->Read(indirect.full + 1);
+            addr.LL.value = bus->Read(indirect.full);
+            addr.HH.value = bus->Read(indirect.full + 1);
 
-            return this->bus->Read(addr.full);
+            return bus->Read(addr.full);
         }
         case IndexedY:{
             Address indirect{0};
             indirect.LL.value = instructionBytes[1];
             indirect.HH.value = 0;
 
-            addr.LL.value = this->bus->Read(indirect.full);
-            addr.HH.value = this->bus->Read(indirect.full + 1);
+            addr.LL.value = bus->Read(indirect.full);
+            addr.HH.value = bus->Read(indirect.full + 1);
 
-            return this->bus->Read(addr.full + this->Y + this->status.C);
+            return bus->Read(addr.full + Y + status.C);
         }
     }
+}
+
+void Cpu::pushOnStack(uint8_t value) {
+    Word address;
+    address.LL.value = S.stack;
+    address.HH.value = 0x01;
+    bus->Write(address.word, value);
+    S.stack--;
+}
+
+uint8_t Cpu::pullFromStack() {
+    S.stack++;
+    Word address;
+    address.LL.value = S.stack;
+    address.HH.value = 0x01;
+    return bus->Read(address.word);
+};
+
+void Cpu::ADC(MnemonicArgument arg) {
+    A += bus->Read(arg.value.word) + status.C;
+}
+
+void Cpu::AND(MnemonicArgument arg) {
+    A &= arg.value.LL.value;
+}
+
+void Cpu::ASL(MnemonicArgument arg) {
+    if(arg.isAcu)
+        A <<= 1;
+    else{
+        uint8_t value = bus->Read(arg.value.word);
+        value <<= 1;
+        bus->Write(arg.value.word, value);
+    }
+}
+
+void Cpu::BCC(MnemonicArgument arg) {
+    if(!status.C)
+        PC.address = arg.value.word;
+}
+
+void Cpu::BCS(MnemonicArgument arg) {
+    if(status.C)
+        PC.address = arg.value.word;
+}
+
+void Cpu::BEQ(MnemonicArgument arg) {
+    if(status.Z)
+        PC.address = arg.value.word;
+}
+
+void Cpu::BIT(MnemonicArgument arg) {
+    status.V = (arg.value.LL.value & 0x40);
+    status.N = (arg.value.LL.value & 0x80);
+    status.Z = (A & arg.value.LL.value);
+}
+
+void Cpu::BMI(MnemonicArgument arg) {
+    if(status.N)
+        PC.address = arg.value.word;
+}
+
+void Cpu::BNE(MnemonicArgument arg) {
+    if(!status.Z)
+        PC.address = arg.value.word;
+}
+
+void Cpu::BPL(MnemonicArgument arg) {
+    if(!status.N)
+        PC.address = arg.value.word;
+}
+
+void Cpu::BRK(MnemonicArgument arg) {
+    //TODO : check what push means exactly
+    //interrupt
+    status.I = 1;
+    Word nextAddress;
+    nextAddress.word = PC.address;
+    nextAddress.word+=2;
+    pushOnStack(nextAddress.LL.value);
+    pushOnStack(nextAddress.HH.value);
+    pushOnStack(status.state);
+}
+
+void Cpu::BVC(MnemonicArgument arg) {
+    if(!status.V)
+        PC.address = arg.value.word;
+}
+
+void Cpu::BVS(MnemonicArgument arg) {
+    if(status.V)
+        PC.address = arg.value.word;
+}
+
+void Cpu::CLC(MnemonicArgument arg) {
+    status.C = 0;
+}
+
+void Cpu::CLD(MnemonicArgument arg) {
+    status.D = 0;
+}
+
+void Cpu::CLI(MnemonicArgument arg) {
+    status.I = 0;
+}
+
+void Cpu::CLV(MnemonicArgument arg) {
+    status.V = 0;
+}
+
+void Cpu::CMP(MnemonicArgument arg) {
+    uint8_t value = A - arg.value.LL.value;
+    //TODO : setflags
+}
+
+void Cpu::CPX(MnemonicArgument arg) {
+    uint8_t value = X - arg.value.LL.value;
+    //TODO : setflags
+}
+
+void Cpu::CPY(MnemonicArgument arg) {
+    uint8_t value = Y - arg.value.LL.value;
+    //TODO : setflags
+}
+
+void Cpu::DEC(MnemonicArgument arg) {
+    uint8_t value = bus->Read(arg.value.word);
+    value--;
+    bus->Write(arg.value.word, value);
+}
+
+void Cpu::DEX(MnemonicArgument arg) {
+    X--;
+}
+
+void Cpu::DEY(MnemonicArgument arg) {
+    Y--;
+}
+
+void Cpu::EOR(MnemonicArgument arg) {
+    A ^= bus->Read(arg.value.word);
+}
+
+void Cpu::INC(MnemonicArgument arg) {
+    uint8_t value = bus->Read(arg.value.word);
+    value++;
+    bus->Write(arg.value.word, value);
+}
+
+void Cpu::INX(MnemonicArgument arg) {
+    X++;
+}
+
+void Cpu::INY(MnemonicArgument arg) {
+    Y++;
+}
+
+void Cpu::JMP(MnemonicArgument arg) {
+    PC.address = arg.value.word;
+}
+
+void Cpu::JSR(MnemonicArgument arg) {
+    PC.address = arg.value.word;
+    //TODO : save arg.value.HH.value;
+}
+
+void Cpu::LDA(MnemonicArgument arg) {
+    A = bus->Read(arg.value.word);
+}
+
+void Cpu::LDX(MnemonicArgument arg) {
+    X = bus->Read(arg.value.word);
+}
+
+void Cpu::LDY(MnemonicArgument arg) {
+    Y = bus->Read(arg.value.word);
+}
+
+void Cpu::LSR(MnemonicArgument arg) {
+    if(arg.isAcu)
+        A >>= 1;
+    else{
+        uint8_t value = bus->Read(arg.value.word);
+        value >>=1;
+        bus->Write(arg.value.word, value);
+    }
+    status.N = 0;
+}
+
+void Cpu::NOP(MnemonicArgument arg) {
+
+}
+
+void Cpu::ORA(MnemonicArgument arg) {
+    A |= bus->Read(arg.value.word);
+}
+
+void Cpu::PHA(MnemonicArgument arg) {
+    pushOnStack(A);
+}
+
+void Cpu::PHP(MnemonicArgument arg) {
+    pushOnStack(S.stack);
+}
+
+void Cpu::PLA(MnemonicArgument arg) {
+    A = pullFromStack();
+}
+
+void Cpu::PLP(MnemonicArgument arg) {
+    status.state = pullFromStack();
+}
+
+void Cpu::ROL(MnemonicArgument arg) {
+    uint8_t value = arg.isAcu ? A : bus->Read(arg.value.word);
+    bool isMSBSet = value & 0x80;
+    value <<= 1;
+    value &= (0xFE + isMSBSet);
+
+    if(arg.isAcu)
+        A = value;
+    else
+        bus->Write(arg.value.word, value);
+}
+
+void Cpu::ROR(MnemonicArgument arg) {
+
+    uint8_t value = arg.isAcu ? A : bus->Read(arg.value.word);
+    uint8_t isMSBSet = (value & 0x01) << 7;
+    value >>= 1;
+    value &= (0x7F + isMSBSet);
+
+    if(arg.isAcu)
+        A = value;
+    else
+        bus->Write(arg.value.word, value);
+}
+
+void Cpu::RTI(MnemonicArgument arg) {
+    status.state = pullFromStack();
+    PC.PCH = pullFromStack();
+    PC.PCL = pullFromStack();
+}
+
+void Cpu::RTS(MnemonicArgument arg) {
+    PC.PCH = pullFromStack();
+    PC.PCL = pullFromStack();
+    PC.address++;
+}
+
+void Cpu::SBC(MnemonicArgument arg) {
+    A -= bus->Read(arg.value.word) - status.C;
+}
+
+void Cpu::SEC(MnemonicArgument arg) {
+    status.C = 1;
+}
+
+void Cpu::SED(MnemonicArgument arg) {
+    status.D = 1;
+}
+
+void Cpu::SEI(MnemonicArgument arg) {
+    status.I = 1;
+}
+
+void Cpu::STA(MnemonicArgument arg) {
+    bus->Write(arg.value.word, A);
+}
+
+void Cpu::STX(MnemonicArgument arg) {
+    bus->Write(arg.value.word, X);
+}
+
+void Cpu::STY(MnemonicArgument arg) {
+    bus->Write(arg.value.word, Y);
+}
+
+void Cpu::TAX(MnemonicArgument arg) {
+    X = A;
+}
+
+void Cpu::TAY(MnemonicArgument arg) {
+    Y = A;
+}
+
+void Cpu::TSX(MnemonicArgument arg) {
+    X = S.stack;
+}
+
+void Cpu::TXA(MnemonicArgument arg) {
+    A = X;
+}
+
+void Cpu::TXS(MnemonicArgument arg) {
+    S.stack = X;
+}
+
+void Cpu::TYA(MnemonicArgument arg) {
+    A = Y;
 }
