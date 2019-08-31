@@ -60,6 +60,9 @@ union StateFlags
 class Cpu{
 
 public:
+	const uint16_t RESET_VECTOR_ADDR = 0xFFFC;
+
+public:
 	uint8_t A;
 	uint8_t Y;
 	uint8_t X;
@@ -74,6 +77,10 @@ public:
 	Cpu();
 	~Cpu();
 
-	void attachBus(Bus* bus);
-	Instruction getInstruction(uint16_t address);
+	inline void attachBus(Bus* bus);
+	inline Instruction getInstruction(const uint16_t address);
+	uint8_t* fetchInstructionBytes(const Instruction instruction, const uint16_t address);
+	inline void reset();
+
+	void run1Instruction();
 };
