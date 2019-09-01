@@ -5,7 +5,7 @@
 #ifndef EMUNES_REGISTERADDRESS_H
 #define EMUNES_REGISTERADDRESS_H
 
-#include "byte.h";
+#include "byte.h"
 
 union Address{
     uint16_t full;

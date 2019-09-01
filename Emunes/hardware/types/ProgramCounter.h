@@ -8,8 +8,8 @@
 union ProgramCounter
 {
     uint16_t address;
-    uint8_t PCL : 8;
-    uint8_t PCH : 8;
+    uint8_t PCL :8;
+    uint8_t PCH :8;
 };
 
 #endif //EMUNES_PROGRAMCOUNTER_H

@@ -5,7 +5,6 @@
 
 #include "types/ProgramCounter.h"
 #include "types/StackPointer.h"
-#include "types/Instruction.h"
 #include "types/AddressingMode.h"
 #include "types/MnemonicArgument.h"
 
@@ -24,10 +23,22 @@ union StateFlags
 	uint8_t N : 8; // Negative : 1 = negative
 };
 
+
 class Cpu{
 
 public:
-	const uint16_t RESET_VECTOR_ADDR = 0xFFFC;
+    struct Instruction {
+        //uint8_t opcode; implied by the index in the instruction set
+        std::string mnemonic;
+        AddressingMode addressingMode;
+        uint8_t memoryRequirement; // byte code size (1, 2 or 3)
+        uint8_t executionTime; // in machine cycle
+        void (Cpu::*mnemonicCall )(MnemonicArgument) = nullptr;
+    };
+
+public:
+	static const uint16_t RESET_VECTOR_ADDR = 0xFFFC;
+    static const uint8_t STACK_POINTER_INITIAL_VALUE = 0xFD;
 
 public:
 	uint8_t A;
@@ -40,6 +51,7 @@ public:
 	std::array<Instruction, 256> instructionSet;
 	Bus* bus;
 
+
 public:
 	Cpu();
 	~Cpu();
@@ -49,7 +61,7 @@ public:
 	void fetchInstructionBytes(const Instruction &instruction, const uint16_t &address, uint8_t* byteFetched);
 	void reset();
 	void run1Instruction();
-    uint16_t fetchArgument(const AddressingMode &mode, const uint8_t *instructionBytes);
+    MnemonicArgument fetchArgument(const AddressingMode &mode, const uint8_t *instructionBytes);
 
     void pushOnStack(uint8_t value);
     uint8_t pullFromStack();
@@ -110,4 +122,7 @@ public:
     void TXA(MnemonicArgument arg);
     void TXS(MnemonicArgument arg);
     void TYA(MnemonicArgument arg);
+    void XXX(MnemonicArgument arg);
 };
+
+

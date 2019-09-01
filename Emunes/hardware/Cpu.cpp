@@ -1,31 +1,34 @@
+#include <ios>
+#include <iomanip>
+#include <iostream>
 #include "Cpu.h"
 #include "types/RegisterAddress.h"
 
 Cpu::Cpu()
-:A(0),X(0),Y(0),PC{0},S{0x20}, status{0},bus(nullptr), instructionSet{{
-		{ "BRK", Implied,  1, 7 },	{ "ORA", IndexedX, 2, 6 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "ORA", ZeroPage, 2, 3 },	{ "ASL", ZeroPage, 2, 5 },	{ "???", Absolute, 0, 0 },	{ "PHP", Implied, 1, 3 },	{ "ORA", Immediate, 2, 2 },	{ "ASL", Accumulator,1, 2 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "ORA", Absolute, 3, 4 },	{ "ASL", Absolute, 3, 6 },	{ "???", Absolute, 0, 0 },
-		{ "BPL", Relative, 2, 2 },	{ "ORA", IndexedY, 2, 5 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "ORA", ZeroPageX,2, 4 },	{ "ASL", ZeroPageX,2, 6 },	{ "???", Absolute, 0, 0 },	{ "CLC", Implied, 1, 2 },	{ "ORA", AbsoluteY, 3, 4 },	{ "???", Absolute,   0, 0 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "ORA", AbsoluteX,3, 4 },	{ "ASL", AbsoluteX,3, 7 },	{ "???", Absolute, 0, 0 },
-		{ "JSR", Absolute, 3, 6 },	{ "AND", IndexedX, 2, 6 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "BIT", ZeroPage, 2, 3 },	{ "AND", ZeroPage, 2, 3 },	{ "ROL", ZeroPage, 2, 5 },	{ "???", Absolute, 0, 0 },	{ "PLP", Implied, 1, 4 },	{ "AND", Immediate, 2, 2 },	{ "ROL", Accumulator,1, 2 },	{ "???", Absolute, 0, 0 },	{ "BIT", Absolute, 3, 4 },	{ "AND", Absolute, 3, 4 },	{ "ROL", Absolute, 3, 6 },	{ "???", Absolute, 0, 0 },
-		{ "BMI", Relative, 2, 2 },	{ "AND", IndexedY, 2, 5 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "AND", ZeroPageX,2, 4 },	{ "ROL", ZeroPageX,2, 6 },	{ "???", Absolute, 0, 0 },	{ "SEC", Implied, 1, 2 },	{ "AND", AbsoluteY, 3, 4 },	{ "???", Absolute,	  0, 0 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "AND", AbsoluteX,3, 4 },	{ "ROL", AbsoluteX,3, 7 },	{ "???", Absolute, 0, 0 },
-		{ "RTI", Implied,  1, 6 },	{ "EOR", IndexedX, 2, 6 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "EOR", ZeroPage, 2, 3 },	{ "LSR", ZeroPage ,2, 5 },	{ "???", Absolute, 0, 0 },	{ "PHA", Implied, 1, 3 },	{ "EOR", Immediate, 2, 2 },	{ "LSR", Accumulator,1, 2 },	{ "???", Absolute, 0, 0 },	{ "JMP", Absolute, 3, 3 },	{ "EOR", Absolute, 3, 4 },	{ "LSR", Absolute, 3, 6 },	{ "???", Absolute, 0, 0 },
-		{ "BVC", Relative, 2, 2 },	{ "EOR", IndexedY, 2, 5 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "EOR", ZeroPageX,2, 4 },	{ "LSR", ZeroPageX,2, 6 },	{ "???", Absolute, 0, 0 },	{ "CLI", Implied, 1, 2 },	{ "EOR", AbsoluteY, 3, 4 },	{ "???", Absolute,   0, 0 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "EOR", AbsoluteX,3, 4 },	{ "LSR", AbsoluteX,3, 7 },	{ "???", Absolute, 0, 0 },
-		{ "RTS", Implied,  1, 6 },	{ "ADC", IndexedX, 2, 6 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "ADC", ZeroPage, 2, 3 },	{ "ROR", ZeroPage, 2, 5 },	{ "???", Absolute, 0, 0 },	{ "PLA", Implied, 1, 4 },	{ "ADC", Immediate, 2, 2 },	{ "ROR", Accumulator,1, 2 },	{ "???", Absolute, 0, 0 },	{ "JMP", Indirect, 3, 5 },	{ "ADC", Absolute, 3, 4 },	{ "ROR", Absolute, 3, 6 },	{ "???", Absolute, 0, 0 },
-		{ "BVS", Relative, 2, 2 },	{ "ADC", IndexedY, 2, 5 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "ADC", ZeroPageX,2, 4 },	{ "ROR", ZeroPageX,2, 6 },	{ "???", Absolute, 0, 0 },	{ "SEI", Implied, 1, 2 },	{ "ADC", AbsoluteY, 3, 4 },	{ "???", Absolute,   0, 0 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "ADC", AbsoluteX,3, 4 },	{ "ROR", AbsoluteX,3, 7 },	{ "???", Absolute, 0, 0 },
-		{ "???", Absolute, 0, 0 },	{ "STA", IndexedX, 2, 6 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "STY", ZeroPage, 2, 3 },	{ "STA", ZeroPage, 2, 3 },	{ "STX", ZeroPage, 2, 3 },	{ "???", Absolute, 0, 0 },	{ "DEY", Implied, 1, 2 },	{ "???", Absolute,  0, 0 },	{ "TXA", Implied,	  1, 2 },	{ "???", Absolute, 0, 0 },	{ "STY", Absolute, 3, 4 },	{ "STA", Absolute, 3, 4 },	{ "STX", Absolute, 3, 4 },	{ "???", Absolute, 0, 0 },
-		{ "BCC", Relative, 2, 2 },	{ "STA", IndexedY, 2, 6 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "STY", ZeroPageX,2, 4 },	{ "STA", ZeroPageX,2, 4 },	{ "STX", ZeroPageY,2, 4 },	{ "???", Absolute, 0, 0 },	{ "TYA", Implied, 1, 2 },	{ "STA", AbsoluteY, 3, 5 },	{ "TXS", Implied,	  1, 2 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "STA", AbsoluteX,3, 5 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },
-		{ "LDY", Immediate,2, 2 },	{ "LDA", IndexedX, 2, 6 },	{ "LDX", Immediate,2, 2 },	{ "???", Absolute, 0, 0 },	{ "LDY", ZeroPage, 2, 3 },	{ "LDA", ZeroPage, 2, 3 },	{ "LDX", ZeroPage, 2, 3 },	{ "???", Absolute, 0, 0 },	{ "TAY", Implied, 1, 2 },	{ "LDA", Immediate, 2, 2 },	{ "TAX", Implied,	  1, 2 },	{ "???", Absolute, 0, 0 },	{ "LDY", Absolute, 3, 4 },	{ "LDA", Absolute, 3, 4 },	{ "LDX", Absolute, 3, 4 },	{ "???", Absolute, 0, 0 },
-		{ "BCS", Relative, 2, 2 },	{ "LDA", IndexedY, 2, 5 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "LDY", ZeroPageX,2, 4 },	{ "LDA", ZeroPageX,2, 4 },	{ "LDX", ZeroPageY,2, 4 },	{ "???", Absolute, 0, 0 },	{ "CLV", Implied, 1, 2 },	{ "LDA", AbsoluteY, 3, 4 },	{ "TSX", Implied,	  1, 2 },	{ "???", Absolute, 0, 0 },	{ "LDY", AbsoluteX,3, 4 },	{ "LDA", AbsoluteX,3, 4 },	{ "LDX", AbsoluteY,3, 4 },	{ "???", Absolute, 0, 0 },
-		{ "CPY", Immediate,2, 2 },	{ "CMP", IndexedX, 2, 6 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "CPY", ZeroPage, 2, 3 },	{ "CMP", ZeroPage, 2, 3 },	{ "DEC", ZeroPage, 2, 5 },	{ "???", Absolute, 0, 0 },	{ "INY", Implied, 1, 2 },	{ "CMP", Immediate, 2, 2 },	{ "DEX", Implied,	  1, 2 },	{ "???", Absolute, 0, 0 },	{ "CPY", Absolute, 3, 4 },	{ "CMP", Absolute, 3, 4 },	{ "DEC", Absolute, 3, 6 },	{ "???", Absolute, 0, 0 },
-		{ "BNE", Relative, 2, 2 },	{ "CMP", IndexedY, 2, 5 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "CMP", ZeroPageX,2, 4 },	{ "DEC", ZeroPageX,2, 6 },	{ "???", Absolute, 0, 0 },	{ "CLD", Implied, 1, 2 },	{ "CMP", AbsoluteY, 3, 4 },	{ "???", Absolute,   0, 0 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "CMP", AbsoluteX,3, 4 },	{ "DEC", AbsoluteX,3, 7 },	{ "???", Absolute, 0, 0 },
-		{ "CPX", Immediate,2, 2 },	{ "SBC", IndexedX, 2, 6 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "CPX", ZeroPage, 2, 3 },	{ "SBC", ZeroPage, 2, 3 },	{ "INC", ZeroPage, 2, 5 },	{ "???", Absolute, 0, 0 },	{ "INX", Implied, 1, 2 },	{ "SBC", Immediate, 2, 2 },	{ "NOP", Implied,	  1, 2 },	{ "???", Absolute, 0, 0 },	{ "CPX", Absolute, 3, 4 },	{ "SBC", Absolute, 3, 4 },	{ "INC", Absolute, 3, 6 },	{ "???", Absolute, 0, 0 },
-		{ "BEQ", Relative, 2, 2 },	{ "SBC", IndexedY, 2, 5 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "SBC", ZeroPageX,2, 4 },	{ "INC", ZeroPageX,2, 6 },	{ "???", Absolute, 0, 0 },	{ "SED", Implied, 1, 2 },	{ "SBC", AbsoluteY, 3, 4 },	{ "???", Absolute,   0, 0 },	{ "???", Absolute, 0, 0 },	{ "???", Absolute, 0, 0 },	{ "SBC", AbsoluteX,3, 4 },	{ "INC", AbsoluteX,3, 7 },	{ "???", Absolute, 0, 0 }
+:A(0),X(0),Y(0),PC{0},S{STACK_POINTER_INITIAL_VALUE}, status{0x20},bus(nullptr), instructionSet{{
+		{ "BRK", Implied, 1, 7, &Cpu::BRK },	{ "ORA", IndexedX, 2, 6, &Cpu::ORA },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "ORA", ZeroPage, 2, 3, &Cpu::ORA },	{ "ASL", ZeroPage, 2, 5, &Cpu::ASL },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "PHP", Implied, 1, 3, &Cpu::PHP },	{ "ORA", Immediate, 2, 2, &Cpu::ORA },	{ "ASL", Accumulator, 1, 2, &Cpu::ASL },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "ORA", Absolute, 3, 4, &Cpu::ORA },	{ "ASL", Absolute, 3, 6, &Cpu::ASL },	{ "???", Absolute, 0, 0, &Cpu::XXX },
+		{ "BPL", Relative, 2, 2, &Cpu::BPL },	{ "ORA", IndexedY, 2, 5, &Cpu::ORA },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "ORA", ZeroPageX, 2, 4, &Cpu::ORA },	{ "ASL", ZeroPageX, 2, 6, &Cpu::ASL },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "CLC", Implied, 1, 2, &Cpu::CLC },	{ "ORA", AbsoluteY, 3, 4, &Cpu::ORA },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "ORA", AbsoluteX, 3, 4, &Cpu::ORA },	{ "ASL", AbsoluteX, 3, 7, &Cpu::ASL },	{ "???", Absolute, 0, 0, &Cpu::XXX },
+		{ "JSR", Absolute, 3, 6, &Cpu::JSR },	{ "AND", IndexedX, 2, 6, &Cpu::AND },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "BIT", ZeroPage, 2, 3, &Cpu::BIT },	{ "AND", ZeroPage, 2, 3, &Cpu::AND },	{ "ROL", ZeroPage, 2, 5, &Cpu::ROL },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "PLP", Implied, 1, 4, &Cpu::PLP },	{ "AND", Immediate, 2, 2, &Cpu::AND },	{ "ROL", Accumulator, 1, 2, &Cpu::ROL },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "BIT", Absolute, 3, 4, &Cpu::BIT },	{ "AND", Absolute, 3, 4, &Cpu::AND },	{ "ROL", Absolute, 3, 6, &Cpu::ROL },	{ "???", Absolute, 0, 0, &Cpu::XXX },
+		{ "BMI", Relative, 2, 2, &Cpu::BMI },	{ "AND", IndexedY, 2, 5, &Cpu::AND },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "AND", ZeroPageX, 2, 4, &Cpu::AND },	{ "ROL", ZeroPageX, 2, 6, &Cpu::ROL },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "SEC", Implied, 1, 2, &Cpu::SEC },	{ "AND", AbsoluteY, 3, 4, &Cpu::AND },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "AND", AbsoluteX, 3, 4, &Cpu::AND },	{ "ROL", AbsoluteX, 3, 7, &Cpu::ROL },	{ "???", Absolute, 0, 0, &Cpu::XXX },
+		{ "RTI", Implied, 1, 6, &Cpu::RTI },	{ "EOR", IndexedX, 2, 6, &Cpu::EOR },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "EOR", ZeroPage, 2, 3, &Cpu::EOR },	{ "LSR", ZeroPage, 2, 5, &Cpu::LSR },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "PHA", Implied, 1, 3, &Cpu::PHA },	{ "EOR", Immediate, 2, 2, &Cpu::EOR },	{ "LSR", Accumulator, 1, 2, &Cpu::LSR },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "JMP", Absolute, 3, 3, &Cpu::JMP },	{ "EOR", Absolute, 3, 4, &Cpu::EOR },	{ "LSR", Absolute, 3, 6, &Cpu::LSR },	{ "???", Absolute, 0, 0, &Cpu::XXX },
+		{ "BVC", Relative, 2, 2, &Cpu::BVC },	{ "EOR", IndexedY, 2, 5, &Cpu::EOR },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "EOR", ZeroPageX, 2, 4, &Cpu::EOR },	{ "LSR", ZeroPageX, 2, 6, &Cpu::LSR },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "CLI", Implied, 1, 2, &Cpu::CLI },	{ "EOR", AbsoluteY, 3, 4, &Cpu::EOR },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "EOR", AbsoluteX, 3, 4, &Cpu::EOR },	{ "LSR", AbsoluteX, 3, 7, &Cpu::LSR },	{ "???", Absolute, 0, 0, &Cpu::XXX },
+		{ "RTS", Implied, 1, 6, &Cpu::RTS },	{ "ADC", IndexedX, 2, 6, &Cpu::ADC },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "ADC", ZeroPage, 2, 3, &Cpu::ADC },	{ "ROR", ZeroPage, 2, 5, &Cpu::ROR },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "PLA", Implied, 1, 4, &Cpu::PLA },	{ "ADC", Immediate, 2, 2, &Cpu::ADC },	{ "ROR", Accumulator, 1, 2, &Cpu::ROR },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "JMP", Indirect, 3, 5, &Cpu::JMP },	{ "ADC", Absolute, 3, 4, &Cpu::ADC },	{ "ROR", Absolute, 3, 6, &Cpu::ROR },	{ "???", Absolute, 0, 0, &Cpu::XXX },
+		{ "BVS", Relative, 2, 2, &Cpu::BVS },	{ "ADC", IndexedY, 2, 5, &Cpu::ADC },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "ADC", ZeroPageX, 2, 4, &Cpu::ADC },	{ "ROR", ZeroPageX, 2, 6, &Cpu::ROR },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "SEI", Implied, 1, 2, &Cpu::SEI },	{ "ADC", AbsoluteY, 3, 4, &Cpu::ADC },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "ADC", AbsoluteX, 3, 4, &Cpu::ADC },	{ "ROR", AbsoluteX, 3, 7, &Cpu::ROR },	{ "???", Absolute, 0, 0, &Cpu::XXX },
+		{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "STA", IndexedX, 2, 6, &Cpu::STA },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "STY", ZeroPage, 2, 3, &Cpu::STY },	{ "STA", ZeroPage, 2, 3, &Cpu::STA },	{ "STX", ZeroPage, 2, 3, &Cpu::STX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "DEY", Implied, 1, 2, &Cpu::DEY },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "TXA", Implied, 1, 2, &Cpu::TXA },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "STY", Absolute, 3, 4, &Cpu::STY },	{ "STA", Absolute, 3, 4, &Cpu::STA },	{ "STX", Absolute, 3, 4, &Cpu::STX },	{ "???", Absolute, 0, 0, &Cpu::XXX },
+		{ "BCC", Relative, 2, 2, &Cpu::BCC },	{ "STA", IndexedY, 2, 6, &Cpu::STA },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "STY", ZeroPageX, 2, 4, &Cpu::STY },	{ "STA", ZeroPageX, 2, 4, &Cpu::STA },	{ "STX", ZeroPageY, 2, 4, &Cpu::STX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "TYA", Implied, 1, 2, &Cpu::TYA },	{ "STA", AbsoluteY, 3, 5, &Cpu::STA },	{ "TXS", Implied, 1, 2, &Cpu::TXS },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "STA", AbsoluteX, 3, 5, &Cpu::STA },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },
+		{ "LDY", Immediate, 2, 2, &Cpu::LDY },	{ "LDA", IndexedX, 2, 6, &Cpu::LDA },	{ "LDX", Immediate, 2, 2, &Cpu::LDX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "LDY", ZeroPage, 2, 3, &Cpu::LDY },	{ "LDA", ZeroPage, 2, 3, &Cpu::LDA },	{ "LDX", ZeroPage, 2, 3, &Cpu::LDX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "TAY", Implied, 1, 2, &Cpu::TAY },	{ "LDA", Immediate, 2, 2, &Cpu::LDA },	{ "TAX", Implied, 1, 2, &Cpu::TAX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "LDY", Absolute, 3, 4, &Cpu::LDY },	{ "LDA", Absolute, 3, 4, &Cpu::LDA },	{ "LDX", Absolute, 3, 4, &Cpu::LDX },	{ "???", Absolute, 0, 0, &Cpu::XXX },
+		{ "BCS", Relative, 2, 2, &Cpu::BCS },	{ "LDA", IndexedY, 2, 5, &Cpu::LDA },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "LDY", ZeroPageX, 2, 4, &Cpu::LDY },	{ "LDA", ZeroPageX, 2, 4, &Cpu::LDA },	{ "LDX", ZeroPageY, 2, 4, &Cpu::LDX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "CLV", Implied, 1, 2, &Cpu::CLV },	{ "LDA", AbsoluteY, 3, 4, &Cpu::LDA },	{ "TSX", Implied, 1, 2, &Cpu::TSX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "LDY", AbsoluteX, 3, 4, &Cpu::LDY },	{ "LDA", AbsoluteX, 3, 4, &Cpu::LDA },	{ "LDX", AbsoluteY, 3, 4, &Cpu::LDX },	{ "???", Absolute, 0, 0, &Cpu::XXX },
+		{ "CPY", Immediate, 2, 2, &Cpu::CPY },	{ "CMP", IndexedX, 2, 6, &Cpu::CMP },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "CPY", ZeroPage, 2, 3, &Cpu::CPY },	{ "CMP", ZeroPage, 2, 3, &Cpu::CMP },	{ "DEC", ZeroPage, 2, 5, &Cpu::DEC },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "INY", Implied, 1, 2, &Cpu::INY },	{ "CMP", Immediate, 2, 2, &Cpu::CMP },	{ "DEX", Implied, 1, 2, &Cpu::DEX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "CPY", Absolute, 3, 4, &Cpu::CPY },	{ "CMP", Absolute, 3, 4, &Cpu::CMP },	{ "DEC", Absolute, 3, 6, &Cpu::DEC },	{ "???", Absolute, 0, 0, &Cpu::XXX },
+		{ "BNE", Relative, 2, 2, &Cpu::BNE },	{ "CMP", IndexedY, 2, 5, &Cpu::CMP },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "CMP", ZeroPageX, 2, 4, &Cpu::CMP },	{ "DEC", ZeroPageX, 2, 6, &Cpu::DEC },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "CLD", Implied, 1, 2, &Cpu::CLD },	{ "CMP", AbsoluteY, 3, 4, &Cpu::CMP },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "CMP", AbsoluteX, 3, 4, &Cpu::CMP },	{ "DEC", AbsoluteX, 3, 7, &Cpu::DEC },	{ "???", Absolute, 0, 0, &Cpu::XXX },
+		{ "CPX", Immediate, 2, 2, &Cpu::CPX },	{ "SBC", IndexedX, 2, 6, &Cpu::SBC },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "CPX", ZeroPage, 2, 3, &Cpu::CPX },	{ "SBC", ZeroPage, 2, 3, &Cpu::SBC },	{ "INC", ZeroPage, 2, 5, &Cpu::INC },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "INX", Implied, 1, 2, &Cpu::INX },	{ "SBC", Immediate, 2, 2, &Cpu::SBC },	{ "NOP", Implied, 1, 2, &Cpu::NOP },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "CPX", Absolute, 3, 4, &Cpu::CPX },	{ "SBC", Absolute, 3, 4, &Cpu::SBC },	{ "INC", Absolute, 3, 6, &Cpu::INC },	{ "???", Absolute, 0, 0, &Cpu::XXX },
+		{ "BEQ", Relative, 2, 2, &Cpu::BEQ },	{ "SBC", IndexedY, 2, 5, &Cpu::SBC },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "SBC", ZeroPageX, 2, 4, &Cpu::SBC },	{ "INC", ZeroPageX, 2, 6, &Cpu::INC },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "SED", Implied, 1, 2, &Cpu::SED },	{ "SBC", AbsoluteY, 3, 4, &Cpu::SBC },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "SBC", AbsoluteX, 3, 4, &Cpu::SBC },	{ "INC", AbsoluteX, 3, 7, &Cpu::INC },	{ "???", Absolute, 0, 0, &Cpu::XXX }
       }}
 {}
 
 Cpu::~Cpu() = default;
 
 
-Instruction Cpu::getInstruction(const uint16_t &address) {
+Cpu::Instruction Cpu::getInstruction(const uint16_t &address) {
 	return instructionSet[address];
 }
 
@@ -45,60 +48,73 @@ void Cpu::attachBus(Bus* bus){
 }
 
 void Cpu::reset() {
-	PC.PCL = bus->Read(RESET_VECTOR_ADDR);
+    PC.PCL = bus->Read(RESET_VECTOR_ADDR);
 	PC.PCH = bus->Read(RESET_VECTOR_ADDR + 1);
-	S.full = 0x00FF;
+	status.state = 0x20;
+	S.full = STACK_POINTER_INITIAL_VALUE;
+	A = 0;
+	X = 0;
+	Y = 0;
+	std::cout << std::setfill('0') << std::setw(4) << std::hex << PC.address << std::endl;
 }
 
 void Cpu::run1Instruction() {
 	Instruction instruction = getInstruction(PC.address);
 	uint8_t instructionBytes[3];
 	fetchInstructionBytes(instruction, PC.address, instructionBytes);
-	uint16_t argument = fetchArgument(instruction.addressingMode, instructionBytes);
-
+    MnemonicArgument argument = fetchArgument(instruction.addressingMode, instructionBytes);
+    (this->*instruction.mnemonicCall)(argument);
 }
 
-uint16_t Cpu::fetchArgument(const AddressingMode &mode, const uint8_t* instructionBytes){
+MnemonicArgument Cpu::fetchArgument(const AddressingMode &mode, const uint8_t* instructionBytes){
     Address addr{0};
+    PC.address++;
+    MnemonicArgument fetchedArgument{0x0000,0x00,0};
+
     switch (mode){
-        case Implied:
-        case Accumulator:
-        case Immediate:
-            return 0;
+        case Accumulator:{
+            fetchedArgument.isAcu = 1;
+            return fetchedArgument;
+        }
+        case Immediate:{
+            fetchedArgument.readValue.value = instructionBytes[1];
+            return fetchedArgument;
+        }
         case Absolute:{
             addr.LL.value = instructionBytes[1];
             addr.HH.value = instructionBytes[2];
-            return addr.full;
+            break;
         }
         case ZeroPage:{
             addr.LL.value = instructionBytes[1];
-            return bus->Read(addr.full);
+            break;
         }
         case ZeroPageX:{
             addr.LL.value = instructionBytes[1] + X;
             addr.HH.value = 0;
-            return bus->Read(addr.full);
+            break;
         }
         case ZeroPageY:{
             addr.LL.value = instructionBytes[1] + Y;
             addr.HH.value = 0;
-            return bus->Read(addr.full);
+            break;
         }
         case AbsoluteX:{
             addr.HH.value = instructionBytes[2];
             addr.LL.value = instructionBytes[1];
             addr.full +=  X + status.C;
-            return bus->Read(addr.full);
+            break;
         }
         case AbsoluteY:{
             addr.HH.value = instructionBytes[2];
             addr.LL.value = instructionBytes[1];
             addr.full +=  Y + status.C;
-            return bus->Read(addr.full);
+            break;
         }
         case Relative:{
-            addr.LL.value = instructionBytes[1];
-            return PC.address + addr.LL.signedValue;
+            byte byte{instructionBytes[1]};
+            addr.full = PC.address + byte.signedValue;
+            break;
         }
         case Indirect:{
             Address indirect{0};
@@ -108,7 +124,7 @@ uint16_t Cpu::fetchArgument(const AddressingMode &mode, const uint8_t* instructi
             addr.LL.value = bus->Read(indirect.full);
             addr.HH.value = bus->Read(indirect.full + 1);
 
-            return bus->Read(addr.full);
+            break;
         }
         case IndexedX:{
             Address indirect{0};
@@ -118,7 +134,7 @@ uint16_t Cpu::fetchArgument(const AddressingMode &mode, const uint8_t* instructi
             addr.LL.value = bus->Read(indirect.full);
             addr.HH.value = bus->Read(indirect.full + 1);
 
-            return bus->Read(addr.full);
+            break;
         }
         case IndexedY:{
             Address indirect{0};
@@ -127,25 +143,28 @@ uint16_t Cpu::fetchArgument(const AddressingMode &mode, const uint8_t* instructi
 
             addr.LL.value = bus->Read(indirect.full);
             addr.HH.value = bus->Read(indirect.full + 1);
-
-            return bus->Read(addr.full + Y + status.C);
+            addr.full += Y + status.C;
+            break;
         }
+        default:
+            break;
     }
+    fetchedArgument.targetAddress.word = addr.full;
+    fetchedArgument.readValue.value = bus->Read(addr.full);
+    return fetchedArgument;
 }
 
 void Cpu::pushOnStack(uint8_t value) {
-    Word address;
+    Word address{0x0100};
     address.LL.value = S.stack;
-    address.HH.value = 0x01;
     bus->Write(address.word, value);
     S.stack--;
 }
 
 uint8_t Cpu::pullFromStack() {
     S.stack++;
-    Word address;
+    Word address{0x0100};
     address.LL.value = S.stack;
-    address.HH.value = 0x01;
     return bus->Read(address.word);
 };
 
@@ -153,11 +172,11 @@ void Cpu::ADC(MnemonicArgument arg) {
 	uint8_t oldA = A;
 
 	Word w{ 0 };
-	w.word = arg.value.LL.value;
+	w.word = arg.readValue.value;
 	w.LL.value += A + status.C;
 
 	status.C = w.HH.value > 0;
-	status.V = (~(oldA ^ arg.value.LL.value) & (oldA ^ w.LL.value)) & 0x0080;
+	status.V = (~(oldA ^ arg.readValue.value) & (oldA ^ w.LL.value)) & 0x0080;
 
 	A = w.LL.value;
 
@@ -166,14 +185,14 @@ void Cpu::ADC(MnemonicArgument arg) {
 }
 
 void Cpu::AND(MnemonicArgument arg) {
-    A &= arg.value.LL.value;
+    A &= arg.readValue.value;
 
 	status.Z = A == 0;
 	status.N = A & 0x80;
 }
 
 void Cpu::ASL(MnemonicArgument arg) {
-	uint8_t value = arg.isAcu ? A : arg.value.LL.value;
+	uint8_t value = arg.isAcu ? A : arg.readValue.value;
 	status.C = value & 0x80;
 	value <<= 1;
 	status.Z = value == 0;
@@ -182,49 +201,49 @@ void Cpu::ASL(MnemonicArgument arg) {
 	if (arg.isAcu)
 		A = value;
 	else
-		bus->Write(arg.value.word, value);
+		bus->Write(arg.targetAddress.word, value);
 }
 
 void Cpu::BCC(MnemonicArgument arg) {
     if(!status.C)
-        PC.address = arg.value.word;
+        PC.address = arg.targetAddress.word;
 }
 
 void Cpu::BCS(MnemonicArgument arg) {
     if(status.C)
-        PC.address = arg.value.word;
+        PC.address = arg.targetAddress.word;
 }
 
 void Cpu::BEQ(MnemonicArgument arg) {
     if(status.Z)
-        PC.address = arg.value.word;
+        PC.address = arg.targetAddress.word;
 }
 
 void Cpu::BIT(MnemonicArgument arg) {
-    status.V = (arg.value.LL.value & 0x40);
-    status.N = (arg.value.LL.value & 0x80);
-    status.Z = (A & arg.value.LL.value);
+    status.V = (arg.readValue.value & 0x40);
+    status.N = (arg.readValue.value & 0x80);
+    status.Z = (A & arg.readValue.value);
 }
 
 void Cpu::BMI(MnemonicArgument arg) {
     if(status.N)
-        PC.address = arg.value.word;
+        PC.address = arg.targetAddress.word;
 }
 
 void Cpu::BNE(MnemonicArgument arg) {
     if(!status.Z)
-        PC.address = arg.value.word;
+        PC.address = arg.targetAddress.word;
 }
 
 void Cpu::BPL(MnemonicArgument arg) {
     if(!status.N)
-        PC.address = arg.value.word;
+        PC.address = arg.targetAddress.word;
 }
 
 void Cpu::BRK(MnemonicArgument arg) {
     //interrupt
     status.I = 1;
-    Word nextAddress;
+    Word nextAddress{0};
     nextAddress.word = PC.address;
     nextAddress.word+=2;//TODO::check that
     pushOnStack(nextAddress.LL.value);
@@ -234,12 +253,12 @@ void Cpu::BRK(MnemonicArgument arg) {
 
 void Cpu::BVC(MnemonicArgument arg) {
     if(!status.V)
-        PC.address = arg.value.word;
+        PC.address = arg.targetAddress.word;
 }
 
 void Cpu::BVS(MnemonicArgument arg) {
     if(status.V)
-        PC.address = arg.value.word;
+        PC.address = arg.targetAddress.word;
 }
 
 void Cpu::CLC(MnemonicArgument arg) {
@@ -259,27 +278,27 @@ void Cpu::CLV(MnemonicArgument arg) {
 }
 
 void Cpu::CMP(MnemonicArgument arg) {
-	status.Z = A == arg.value.LL.value;
-	status.N = A < arg.value.LL.value;
-	status.C = A > arg.value.LL.value;
+	status.Z = A == arg.readValue.value;
+	status.N = A < arg.readValue.value;
+	status.C = A > arg.readValue.value;
 }
 
 void Cpu::CPX(MnemonicArgument arg) {
-	status.Z = X == arg.value.LL.value;
-	status.N = X < arg.value.LL.value;
-	status.C = X > arg.value.LL.value;
+	status.Z = X == arg.readValue.value;
+	status.N = X < arg.readValue.value;
+	status.C = X > arg.readValue.value;
 }
 
 void Cpu::CPY(MnemonicArgument arg) {
-	status.Z = Y == arg.value.LL.value;
-	status.N = Y < arg.value.LL.value;
-	status.C = Y > arg.value.LL.value;
+	status.Z = Y == arg.readValue.value;
+	status.N = Y < arg.readValue.value;
+	status.C = Y > arg.readValue.value;
 }
 
 void Cpu::DEC(MnemonicArgument arg) {
-    uint8_t value = bus->Read(arg.value.word);
+    uint8_t value = arg.readValue.value;
     value--;
-    bus->Write(arg.value.word, value);
+    bus->Write(arg.targetAddress.word, value);
 
 	status.N = value & 0x80;
 	status.Z = value == 0;
@@ -300,16 +319,16 @@ void Cpu::DEY(MnemonicArgument arg) {
 }
 
 void Cpu::EOR(MnemonicArgument arg) {
-    A ^= bus->Read(arg.value.word);
+    A ^= arg.readValue.value;
 
 	status.N = A & 0x80;
 	status.Z = A == 0;
 }
 
 void Cpu::INC(MnemonicArgument arg) {
-    uint8_t value = bus->Read(arg.value.word);
+    uint8_t value = arg.readValue.value;
     value++;
-    bus->Write(arg.value.word, value);
+    bus->Write(arg.targetAddress.word, value);
 
 	status.N = value & 0x80;
 	status.Z = value == 0;
@@ -330,43 +349,42 @@ void Cpu::INY(MnemonicArgument arg) {
 }
 
 void Cpu::JMP(MnemonicArgument arg) {
-    PC.address = arg.value.word;
+    PC.address = arg.targetAddress.word;
 }
 
 void Cpu::JSR(MnemonicArgument arg) {
    
-	Word nextAddress;
-	nextAddress.word = PC.address;
+	Word nextAddress{PC.address};
 	nextAddress.word += 2;
 	pushOnStack(nextAddress.LL.value);
 	pushOnStack(nextAddress.HH.value);
 
-	PC.address = arg.value.word;
+	PC.address = arg.targetAddress.word;
 }
 
 void Cpu::LDA(MnemonicArgument arg) {
-    A = arg.value.LL.value;
+    A = arg.readValue.value;
 
 	status.N = A & 0x80;
 	status.Z = A == 0;
 }
 
 void Cpu::LDX(MnemonicArgument arg) {
-    X = arg.value.LL.value;
+    X = arg.readValue.value;
 
 	status.N = X & 0x80;
 	status.Z = X == 0;
 }
 
 void Cpu::LDY(MnemonicArgument arg) {
-    Y = arg.value.LL.value;
+    Y = arg.readValue.value;
 
 	status.N = Y & 0x80;
 	status.Z = Y == 0;
 }
 
 void Cpu::LSR(MnemonicArgument arg) {
-	uint8_t value = arg.isAcu ? A : arg.value.LL.value;
+	uint8_t value = arg.isAcu ? A : arg.readValue.value;
 	status.C = value & 0x01;
 	value >>= 1;
 	status.Z = value == 0;
@@ -375,7 +393,7 @@ void Cpu::LSR(MnemonicArgument arg) {
 	if (arg.isAcu)
 		A = value;
 	else
-		bus->Write(arg.value.word, value);
+		bus->Write(arg.targetAddress.word, value);
 }
 
 void Cpu::NOP(MnemonicArgument arg) {
@@ -383,7 +401,7 @@ void Cpu::NOP(MnemonicArgument arg) {
 }
 
 void Cpu::ORA(MnemonicArgument arg) {
-    A |= arg.value.LL.value;
+    A |= arg.readValue.value;
 
 	status.Z = A == 0;
 	status.N = A & 0x80;
@@ -409,7 +427,7 @@ void Cpu::PLP(MnemonicArgument arg) {
 }
 
 void Cpu::ROL(MnemonicArgument arg) {
-	uint8_t value = arg.isAcu ? A : arg.value.LL.value;
+	uint8_t value = arg.isAcu ? A : arg.readValue.value;
 	uint8_t isCurrentCarrySet = status.C;
 	status.C = value & 0x80;
 	value <<= 1;
@@ -420,11 +438,11 @@ void Cpu::ROL(MnemonicArgument arg) {
 	if (arg.isAcu)
 		A = value;
 	else
-		bus->Write(arg.value.word, value);
+		bus->Write(arg.targetAddress.word, value);
 }
 
 void Cpu::ROR(MnemonicArgument arg) {
-	uint8_t value = arg.isAcu ? A : arg.value.LL.value;
+	uint8_t value = arg.isAcu ? A : arg.readValue.value;
 	uint8_t isCurrentCarrySet = status.C << 7;
 	status.C = value & 0x01;
 	value >>= 1;
@@ -435,7 +453,7 @@ void Cpu::ROR(MnemonicArgument arg) {
 	if (arg.isAcu)
 		A = value;
 	else
-		bus->Write(arg.value.word, value);
+		bus->Write(arg.targetAddress.word, value);
 }
 
 void Cpu::RTI(MnemonicArgument arg) {
@@ -451,14 +469,21 @@ void Cpu::RTS(MnemonicArgument arg) {
 }
 
 void Cpu::SBC(MnemonicArgument arg) {
-	uint8_t value = A - arg.value.LL.value - status.C;
-	status.V = value > A;
-	status.C = status.C;
+    uint8_t oldA = A;
 
-    A = value;
+    Word w{ 0 };
+    w.word = arg.readValue.value;
+    w.LL.value ^= 0xFF;
+    uint8_t argValue = w.LL.value;
+    w.LL.value += A + status.C;
 
-	status.Z = A == 0;
-	status.N = A & 0x80;
+    status.C = w.HH.value > 0;
+    status.V = (~(oldA ^ argValue) & (oldA ^ w.LL.value)) & 0x0080;
+
+    A = w.LL.value;
+
+    status.Z = A == 0;
+    status.N = A & 0x80;
 }
 
 void Cpu::SEC(MnemonicArgument arg) {
@@ -474,15 +499,15 @@ void Cpu::SEI(MnemonicArgument arg) {
 }
 
 void Cpu::STA(MnemonicArgument arg) {
-    bus->Write(arg.value.word, A);
+    bus->Write(arg.targetAddress.word, A);
 }
 
 void Cpu::STX(MnemonicArgument arg) {
-    bus->Write(arg.value.word, X);
+    bus->Write(arg.targetAddress.word, X);
 }
 
 void Cpu::STY(MnemonicArgument arg) {
-    bus->Write(arg.value.word, Y);
+    bus->Write(arg.targetAddress.word, Y);
 }
 
 void Cpu::TAX(MnemonicArgument arg) {
@@ -522,4 +547,8 @@ void Cpu::TYA(MnemonicArgument arg) {
 
 	status.Z = A == 0;
 	status.N = A & 0x80;
+}
+
+void Cpu::XXX(MnemonicArgument arg) {
+    NOP(arg);
 }

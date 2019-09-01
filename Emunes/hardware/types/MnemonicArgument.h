@@ -14,7 +14,8 @@ union Word{
 };
 
 struct MnemonicArgument{
-    Word value;
+    Word targetAddress;
+    byte readValue;
     bool isAcu;
 	//TODO : add address for operands that need it
 };
