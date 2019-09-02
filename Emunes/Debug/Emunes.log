@@ -1,0 +1,7 @@
+﻿  Cpu.cpp
+E:\Projects\Emunes\Emunes\hardware\Cpu.cpp(70,7): error C2676:  '++' binaire : 'MemoryAddress' ne définit pas cet opérateur ou une conversion vers un type acceptable pour l'opérateur prédéfini
+E:\Projects\Emunes\Emunes\hardware\Cpu.cpp(165,6): error C2676:  '--' binaire : 'StackPointer' ne définit pas cet opérateur ou une conversion vers un type acceptable pour l'opérateur prédéfini
+E:\Projects\Emunes\Emunes\hardware\Cpu.cpp(169,6): error C2676:  '++' binaire : 'StackPointer' ne définit pas cet opérateur ou une conversion vers un type acceptable pour l'opérateur prédéfini
+  Emunes.cpp
+  Génération de code en cours...
+E:\Projects\Emunes\Emunes\hardware\Cpu.cpp(467,7): error C2676:  '++' binaire : 'MemoryAddress' ne définit pas cet opérateur ou une conversion vers un type acceptable pour l'opérateur prédéfini

@@ -6,18 +6,12 @@
 #define EMUNES_MNEMONICARGUMENT_H
 
 #include "byte.h"
-
-union Word{
-    uint16_t word;
-    byte LL;
-    byte HH;
-};
+#include "MemoryAddress.h"
 
 struct MnemonicArgument{
-    Word targetAddress;
+    MemoryAddress targetAddress;
     byte readValue;
     bool isAcu;
-	//TODO : add address for operands that need it
 };
 
 #endif //EMUNES_MNEMONICARGUMENT_H

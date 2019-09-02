@@ -3,26 +3,13 @@
 #include <array>
 #include <string>
 
-#include "types/ProgramCounter.h"
 #include "types/StackPointer.h"
 #include "types/AddressingMode.h"
 #include "types/MnemonicArgument.h"
+#include "types/MemoryAddress.h"
+#include "types/StateFlags.h"
 
 #include "Bus.h"
-
-union StateFlags
-{
-	uint8_t state;
-	uint8_t C : 1; // Carry : 1 = true
-	uint8_t Z : 2; // Zero : 1 = Result is Zero
-	uint8_t I : 3; // IRQ Disable : 1 = Disable
-	uint8_t D : 4; // Decimal mode : 1 = true
-	uint8_t B : 5; // Break
-	uint8_t _ : 6; // ???
-	uint8_t V : 7; // Overflow : 1 = true
-	uint8_t N : 8; // Negative : 1 = negative
-};
-
 
 class Cpu{
 
@@ -44,7 +31,7 @@ public:
 	uint8_t A;
 	uint8_t Y;
 	uint8_t X;
-	ProgramCounter PC;
+	MemoryAddress PC;
 	StackPointer S;
 	StateFlags status;
 

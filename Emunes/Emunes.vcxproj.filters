@@ -38,5 +38,8 @@
     <ClInclude Include="hardware\Cpu.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
+    <ClInclude Include="hardware\types\StateFlags.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -63,7 +63,7 @@ void testCpuMnemonic(Cpu* cpu, Ram* ram, Bus* bus) {
         bus->Write(address++, std::stoi(byteCode,NULL,16));
 
     for(int i = 0; i < 50; i++){
-        std::cout << "PC(" << i <<"): " << std::setfill('0') << std::setw(4) << std::hex <<(int)cpu->PC.address << std::endl;
+        std::cout << "PC(" << i <<"): " << std::setfill('0') << std::setw(4) << std::hex <<(int)cpu->PC.address() << std::endl;
         cpu->run1Instruction();
 
     }

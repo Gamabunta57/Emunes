@@ -161,6 +161,7 @@
     <ClInclude Include="hardware\Cpu.h" />
     <ClInclude Include="hardware\Bus.h" />
     <ClInclude Include="hardware\Ram.h" />
+    <ClInclude Include="hardware\types\StateFlags.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
