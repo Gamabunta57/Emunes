@@ -14,28 +14,28 @@ public:
 	uint8_t HH;
 
 public:
-	const inline uint16_t address() {
-		return LL + (HH << 8);
+	inline uint16_t address() const{
+		return LL + (HH << 8u);
 	}
 	
-	MemoryAddress& operator++ () {
-		operator+(1);
+	MemoryAddress& operator++ (int) {
+		return operator+=(1);
 	}
 
-	void operator= (uint16_t const& value) {
-		LL = value & 0x00FF;
-		HH = (value & 0xFF00) >> 8;
+	MemoryAddress& operator= (uint16_t const value) {
+		this->LL = value & 0x00FFu;
+		this->HH = (value & 0xFF00u) >> 8u;
+		return *this;
 	}
 
-	void operator+= (int const& value) {
-		operator+(value);
+	MemoryAddress& operator+= (int const value) {
+		*this = this->address() + value;
+		return *this;
 	}
 
-	void operator+ (uint8_t const& byte) {
-		uint16_t currentAddress = address();
-		currentAddress += byte;
-		LL = currentAddress & 0x00FF;
-		HH = (currentAddress & 0xFF00) >> 8;
+	MemoryAddress operator+ (uint8_t const byte) {
+		MemoryAddress newMA{ this->LL,this->HH};
+		return newMA += byte;
 	}
 };
 #endif //EMUNES_MEMORYADDRESS_H

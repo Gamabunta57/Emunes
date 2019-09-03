@@ -26,6 +26,7 @@ public:
 public:
 	static const uint16_t RESET_VECTOR_ADDR = 0xFFFC;
     static const uint8_t STACK_POINTER_INITIAL_VALUE = 0xFD;
+	static const uint8_t INITIAL_PROCESSOR_STATUS = 0x20;
 
 public:
 	uint8_t A;
@@ -44,15 +45,19 @@ public:
 	~Cpu();
 
 	void attachBus(Bus* bus);
-	Instruction getInstruction(const uint16_t &address);
-	void fetchInstructionBytes(const Instruction &instruction, const uint16_t &address, uint8_t* byteFetched);
+	Instruction getInstruction(uint16_t address) const;
+	void fetchInstructionBytes(const Instruction &instruction, uint16_t address, uint8_t* const byteFetched) const;
 	void reset();
 	void run1Instruction();
-    MnemonicArgument fetchArgument(const AddressingMode &mode, const uint8_t *instructionBytes);
+    MnemonicArgument fetchArgument(AddressingMode mode, const uint8_t* instructionBytes) const;
 
-    void pushOnStack(uint8_t value);
-    uint8_t pullFromStack();
+private:
+	bool _pcHasChanged;
 
+private:
+	void pushOnStack(uint8_t value);
+	uint8_t pullFromStack();
+public:
     void ADC(MnemonicArgument arg);
     void AND(MnemonicArgument arg);
     void ASL(MnemonicArgument arg);

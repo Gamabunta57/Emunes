@@ -11,23 +11,27 @@ struct StackPointer
     bool overflow; // just 1 bit according to the 6502 doc (idk if overflow is the right naming here)
 
 	uint16_t address() {
-		return offset + 0x100;
+		return offset + 0x100u;
 	}
 
-	void operator= (uint8_t const& byte) {
-		offset = byte;
+	StackPointer& operator= (uint8_t const byte) {
+		this->offset = byte;
+		return *this;
 	}
 
-	void operator= (uint16_t const& word) {
-		offset = (word & 0x00FF);
+	StackPointer& operator= (uint16_t const word) {
+		this->offset = word & 0x00FFu;
+		return *this;
 	}
 
-	void operator-- () {
-		offset--;
+	StackPointer& operator-- (int) {
+		*this = (uint16_t)(this->address() - 1);
+		return *this;
 	}
 
-	void operator++ () {
-		offset++;
+	StackPointer& operator++ (int) {
+		*this = (uint16_t)(this->address() + 1);
+		return *this;
 	}
 };
 #endif //EMUNES_STACKPOINTER_H

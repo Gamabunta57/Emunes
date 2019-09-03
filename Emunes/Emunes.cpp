@@ -12,6 +12,7 @@ std::string disassemble(Ram* ram, Cpu* cpu, uint16_t startAdress, uint16_t endAd
 std::string getHexString(int value, int size = 2);
 std::string getAddressingModeIndication(AddressingMode mode, std::string args);
 std::string operator+ (std::string string, AddressingMode addressingMode);
+std::string displayInstruction(Cpu* cpu, Ram* ram, uint16_t address);
 
 void testAddressingMode(Cpu* cpu, Ram* ram, Bus* bus);
 void testCpuMnemonic(Cpu* cpu, Ram* ram, Bus* bus);
@@ -62,8 +63,9 @@ void testCpuMnemonic(Cpu* cpu, Ram* ram, Bus* bus) {
     while (asmStream >> byteCode)
         bus->Write(address++, std::stoi(byteCode,NULL,16));
 
-    for(int i = 0; i < 50; i++){
-        std::cout << "PC(" << i <<"): " << std::setfill('0') << std::setw(4) << std::hex <<(int)cpu->PC.address() << std::endl;
+    for(int i = 0; i < 22; i++){
+        std::cout << "<"<<i<<"> PC" << std::setfill('0') << std::setw(4) << std::hex <<(int)cpu->PC.address() << ":";
+		std::cout << displayInstruction(cpu,ram, cpu->PC.address()) << std::endl;
         cpu->run1Instruction();
 
     }
@@ -112,34 +114,40 @@ std::string disassemble(Ram* ram, Cpu* cpu,  uint16_t startAdress, uint16_t endA
 	uint16_t currentAddress = startAdress;
 	while (currentAddress < endAddress) {
 		uint8_t opcode = ram->Read(currentAddress);
-		std::string byteString = getHexString(opcode);
 		Cpu::Instruction instruction = cpu->getInstruction(opcode);
-
-		std::string args;
-		if (instruction.memoryRequirement > 1) {
-			uint8_t byte = ram->Read(currentAddress + 1);
-			args = getHexString(byte);
-			byteString += " "+ args;
-
-			if (instruction.memoryRequirement > 2){
-				byte = ram->Read(currentAddress + 2);
-				args = getHexString(byte, 1) + args;
-				byteString += " " + getHexString(byte, 2);
-			}
-
-			args = '$' + args;
-		}
-
-		args = getAddressingModeIndication(instruction.addressingMode,args);
-		args.resize(12, ' ');
-
-		std::string hexAddress = getHexString(currentAddress, 4);
-		hexAddress.resize(7, ' ');
-		byteString.resize(12, ' ');
-		result +=  hexAddress + instruction.mnemonic + ' ' + args + byteString+ '<'+instruction.addressingMode+">\n";
+		result += displayInstruction(cpu, ram, currentAddress) + '\n';
 		currentAddress += instruction.memoryRequirement;
 	}
 	return result;
+}
+
+std::string displayInstruction(Cpu* cpu, Ram* ram, uint16_t address) { //TODO :: change that with instruction object + bytecode instead, it's way sufficient
+	uint8_t opcode = ram->Read(address);
+	std::string byteString = getHexString(opcode);
+	Cpu::Instruction instruction = cpu->getInstruction(opcode);
+
+	std::string args;
+	if (instruction.memoryRequirement > 1) {
+		uint8_t byte = ram->Read(address + 1);
+		args = getHexString(byte);
+		byteString += " " + args;
+
+		if (instruction.memoryRequirement > 2) {
+			byte = ram->Read(address + 2);
+			args = getHexString(byte, 1) + args;
+			byteString += " " + getHexString(byte, 2);
+		}
+
+		args = '$' + args;
+	}
+
+	args = getAddressingModeIndication(instruction.addressingMode, args);
+	args.resize(12, ' ');
+
+	std::string hexAddress = getHexString(address, 4);
+	hexAddress.resize(7, ' ');
+	byteString.resize(12, ' ');
+	return hexAddress + instruction.mnemonic + ' ' + args + byteString + '<' + instruction.addressingMode + ">";
 }
 
 std::string getHexString(int value, int size) {

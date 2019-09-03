@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-union StateFlags
+struct StateFlags
 {
 public:
 	bool C;
@@ -16,30 +16,38 @@ public:
 
 public:
 
-	StateFlags(const uint8_t &state) {
-		operator=(state);
+	StateFlags(uint8_t const state) {
+		C = state & 0x01u;
+		Z = state & 0x02u;
+		I = state & 0x04u;
+		D = state & 0x08u;
+		B = state & 0x10u;
+		_ = state & 0x20u;
+		V = state & 0x40u;
+		N = state & 0x80u;
 	}
 
 	uint8_t state() {
-		return (C << 0)
-			+ (Z << 1)
-			+ (I << 2)
-			+ (D << 3)
-			+ (B << 4)
-			+ (_ << 5)
-			+ (V << 6)
-			+ (N << 7)
+		return (C << 0u)
+			+ (Z << 1u)
+			+ (I << 2u)
+			+ (D << 3u)
+			+ (B << 4u)
+			+ (_ << 5u)
+			+ (V << 6u)
+			+ (N << 7u)
 			;
 	}
 
-	void operator=(const uint8_t &state) {
-		C = state & 0x01;
-		Z = state & 0x02;
-		I = state & 0x04;
-		D = state & 0x08;
-		B = state & 0x10;
-		_ = state & 0x20;
-		V = state & 0x40;
-		N = state & 0x80;
+	StateFlags& operator=(uint8_t const state) {
+		this->C = state & 0x01u;
+		this->Z = state & 0x02u;
+		this->I = state & 0x04u;
+		this->D = state & 0x08u;
+		this->B = state & 0x10u;
+		this->_ = state & 0x20u;
+		this->V = state & 0x40u;
+		this->N = state & 0x80u;
+		return *this;
 	}
 };

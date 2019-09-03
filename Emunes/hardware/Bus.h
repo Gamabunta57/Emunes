@@ -13,8 +13,8 @@ public:
 	explicit Bus(Ram* ram);
 	~Bus();
 
-	uint8_t Read(uint16_t address);
-	void Write(uint16_t address, uint8_t byte);
+	uint8_t Read(uint16_t address) const;
+	void Write(uint16_t address, uint8_t byte) const;
 
 };
 
