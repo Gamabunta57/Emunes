@@ -57,7 +57,7 @@ private:
 private:
 	void pushOnStack(uint8_t value);
 	uint8_t pullFromStack();
-public:
+
     void ADC(MnemonicArgument arg);
     void AND(MnemonicArgument arg);
     void ASL(MnemonicArgument arg);
