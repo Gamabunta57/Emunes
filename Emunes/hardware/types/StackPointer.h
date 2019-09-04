@@ -24,14 +24,16 @@ struct StackPointer
 		return *this;
 	}
 
-	StackPointer& operator-- (int) {
-		*this = (uint16_t)(this->address() - 1);
-		return *this;
+	StackPointer operator-- (int) {
+	    StackPointer result(*this);
+		this->offset--;
+		return result;
 	}
 
-	StackPointer& operator++ (int) {
-		*this = (uint16_t)(this->address() + 1);
-		return *this;
+	StackPointer operator++ (int) {
+        StackPointer result(*this);
+        this->offset++;
+        return result;
 	}
 };
 #endif //EMUNES_STACKPOINTER_H

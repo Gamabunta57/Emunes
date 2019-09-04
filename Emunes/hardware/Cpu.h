@@ -44,9 +44,9 @@ public:
 	Cpu();
 	~Cpu();
 
-	void attachBus(Bus* bus);
-	Instruction getInstruction(uint16_t address) const;
-	void fetchInstructionBytes(const Instruction &instruction, uint16_t address, uint8_t* const byteFetched) const;
+	void attachBus(Bus* busToAttach);
+	[[nodiscard]] Instruction getInstruction(uint16_t address) const;
+	void fetchInstructionBytes(const Instruction &instruction, uint16_t address, uint8_t* byteFetched) const;
 	void reset();
 	void run1Instruction();
     MnemonicArgument fetchArgument(AddressingMode mode, const uint8_t* instructionBytes) const;

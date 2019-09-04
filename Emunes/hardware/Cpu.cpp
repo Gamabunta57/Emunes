@@ -4,7 +4,7 @@
 #include "Cpu.h"
 
 Cpu::Cpu()
-:A(0),X(0),Y(0),PC{0},S{STACK_POINTER_INITIAL_VALUE}, status(0x20),bus(nullptr), instructionSet{{
+:A(0),X(0),Y(0),PC{0},S{STACK_POINTER_INITIAL_VALUE}, status(0x20),bus(nullptr),_pcHasChanged(false), instructionSet{{
 		{ "BRK", Implied,  1, 7, &Cpu::BRK },	{ "ORA", IndexedX, 2, 6, &Cpu::ORA },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "ORA", ZeroPage, 2, 3, &Cpu::ORA },	{ "ASL", ZeroPage, 2, 5, &Cpu::ASL },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "PHP", Implied, 1, 3, &Cpu::PHP },	{ "ORA", Immediate, 2, 2, &Cpu::ORA },	{ "ASL", Accumulator, 1, 2, &Cpu::ASL },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "ORA", Absolute, 3, 4, &Cpu::ORA },	{ "ASL", Absolute, 3, 6, &Cpu::ASL },	{ "???", Absolute, 0, 0, &Cpu::XXX },
 		{ "BPL", Relative, 2, 2, &Cpu::BPL },	{ "ORA", IndexedY, 2, 5, &Cpu::ORA },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "ORA", ZeroPageX, 2, 4, &Cpu::ORA },	{ "ASL", ZeroPageX, 2, 6, &Cpu::ASL },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "CLC", Implied, 1, 2, &Cpu::CLC },	{ "ORA", AbsoluteY, 3, 4, &Cpu::ORA },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "ORA", AbsoluteX, 3, 4, &Cpu::ORA },	{ "ASL", AbsoluteX, 3, 7, &Cpu::ASL },	{ "???", Absolute, 0, 0, &Cpu::XXX },
 		{ "JSR", Absolute, 3, 6, &Cpu::JSR },	{ "AND", IndexedX, 2, 6, &Cpu::AND },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "BIT", ZeroPage, 2, 3, &Cpu::BIT },	{ "AND", ZeroPage, 2, 3, &Cpu::AND },	{ "ROL", ZeroPage, 2, 5, &Cpu::ROL },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "PLP", Implied, 1, 4, &Cpu::PLP },	{ "AND", Immediate, 2, 2, &Cpu::AND },	{ "ROL", Accumulator, 1, 2, &Cpu::ROL },	{ "???", Absolute, 0, 0, &Cpu::XXX },	{ "BIT", Absolute, 3, 4, &Cpu::BIT },	{ "AND", Absolute, 3, 4, &Cpu::AND },	{ "ROL", Absolute, 3, 6, &Cpu::ROL },	{ "???", Absolute, 0, 0, &Cpu::XXX },
@@ -31,7 +31,7 @@ Cpu::Instruction Cpu::getInstruction(uint16_t const address) const {
 	return instructionSet[address];
 }
 
-void Cpu::fetchInstructionBytes(const Instruction &instruction, uint16_t const address, uint8_t* const byteFetched) const {
+void Cpu::fetchInstructionBytes(const Instruction &instruction, uint16_t const address, uint8_t* byteFetched) const {
 	byteFetched[0] = bus->Read(address);
 	int memorySize = instruction.memoryRequirement;
 
@@ -42,8 +42,8 @@ void Cpu::fetchInstructionBytes(const Instruction &instruction, uint16_t const a
         byteFetched[2] = bus->Read(address+2);
 }
 
-void Cpu::attachBus(Bus* const bus){
-    this->bus = bus;
+void Cpu::attachBus(Bus* const busToAttach){
+    this->bus = busToAttach;
 }
 
 void Cpu::reset() {
@@ -78,7 +78,7 @@ MnemonicArgument Cpu::fetchArgument(AddressingMode const mode, const uint8_t* co
     MnemonicArgument fetchedArgument{0x0000,0x00,0};
     switch (mode){
         case Accumulator:{
-            fetchedArgument.isAcu = 1;
+            fetchedArgument.isAcu = true;
             return fetchedArgument;
         }
         case Immediate:{
@@ -122,9 +122,7 @@ MnemonicArgument Cpu::fetchArgument(AddressingMode const mode, const uint8_t* co
             break;
         }
         case Indirect:{
-            MemoryAddress indirect{0};
-            indirect.LL = instructionBytes[1];
-            indirect.HH = instructionBytes[2];
+            MemoryAddress indirect{instructionBytes[1], instructionBytes[2]};
 
 			uint16_t address = indirect.address();
 
@@ -182,27 +180,27 @@ void Cpu::ADC(MnemonicArgument const arg) {
 	uint16_t newValue = arg.readValue.value + A + status.C;
 
 	status.C = newValue > 0x00FF;
-	status.V = (~(oldA ^ arg.readValue.value) & (oldA ^ (uint8_t)newValue)) & 0x0080;
+	status.V = (~(oldA ^ arg.readValue.value) & (oldA ^ (uint8_t)newValue)) & 0x0080u;
 
-	A = newValue & 0x00FF;
+	A = newValue & 0x00FFu;
 
 	status.Z = A == 0;
-	status.N = A & 0x80;
+	status.N = A & 0x80u;
 }
 
 void Cpu::AND(MnemonicArgument const arg) {
     A &= arg.readValue.value;
 
 	status.Z = A == 0;
-	status.N = A & 0x80;
+	status.N = A & 0x80u;
 }
 
 void Cpu::ASL(MnemonicArgument const arg) {
 	uint8_t value = arg.isAcu ? A : arg.readValue.value;
-	status.C = value & 0x80;
-	value <<= 1;
+	status.C = value & 0x80u;
+	value <<= 1u;
 	status.Z = value == 0;
-	status.N = value & 0x80;
+	status.N = value & 0x8u;
 
 	if (arg.isAcu)
 		A = value;
@@ -234,8 +232,8 @@ void Cpu::BEQ(MnemonicArgument const arg) {
 }
 
 void Cpu::BIT(MnemonicArgument const arg) {
-    status.V = (arg.readValue.value & 0x40);
-    status.N = (arg.readValue.value & 0x80);
+    status.V = (arg.readValue.value & 0x40u);
+    status.N = (arg.readValue.value & 0x80u);
     status.Z = (A & arg.readValue.value);
 }
 
@@ -262,10 +260,10 @@ void Cpu::BPL(MnemonicArgument const arg) {
 	_pcHasChanged = true;
 }
 
-void Cpu::BRK(MnemonicArgument const arg) {
+void Cpu::BRK(MnemonicArgument const) { //TODO : check why there's a PC + 2
     //interrupt
-    status.I = 1;
-	MemoryAddress nextAddress;
+    status.I = true;
+	MemoryAddress nextAddress{0};
 	nextAddress = (uint16_t)(PC.address() + 2); 
     pushOnStack(nextAddress.LL);
     pushOnStack(nextAddress.HH);
@@ -286,20 +284,20 @@ void Cpu::BVS(MnemonicArgument const arg) {
 	_pcHasChanged = true;
 }
 
-void Cpu::CLC(MnemonicArgument const arg) {
-    status.C = 0;
+void Cpu::CLC(MnemonicArgument const) {
+    status.C = false;
 }
 
-void Cpu::CLD(MnemonicArgument const arg) {
-    status.D = 0;
+void Cpu::CLD(MnemonicArgument const) {
+    status.D = false;
 }
 
-void Cpu::CLI(MnemonicArgument const arg) {
-    status.I = 0;
+void Cpu::CLI(MnemonicArgument const) {
+    status.I = false;
 }
 
-void Cpu::CLV(MnemonicArgument const arg) {
-    status.V = 0;
+void Cpu::CLV(MnemonicArgument const) {
+    status.V = false;
 }
 
 void Cpu::CMP(MnemonicArgument const arg) {
@@ -325,28 +323,28 @@ void Cpu::DEC(MnemonicArgument const arg) {
     value--;
     bus->Write(arg.targetAddress.address(), value);
 
-	status.N = value & 0x80;
+	status.N = value & 0x80u;
 	status.Z = value == 0;
 }
 
-void Cpu::DEX(MnemonicArgument const arg) {
+void Cpu::DEX(MnemonicArgument const) {
     X--;
 
-	status.N = X & 0x80;
+	status.N = X & 0x80u;
 	status.Z = X == 0;
 }
 
-void Cpu::DEY(MnemonicArgument const arg) {
+void Cpu::DEY(MnemonicArgument const) {
     Y--;
 
-	status.N = Y & 0x80;
+	status.N = Y & 0x80u;
 	status.Z = Y == 0;
 }
 
 void Cpu::EOR(MnemonicArgument const arg) {
     A ^= arg.readValue.value;
 
-	status.N = A & 0x80;
+	status.N = A & 0x80u;
 	status.Z = A == 0;
 }
 
@@ -355,21 +353,21 @@ void Cpu::INC(MnemonicArgument const arg) {
     value++;
     bus->Write(arg.targetAddress.address(), value);
 
-	status.N = value & 0x80;
+	status.N = value & 0x80u;
 	status.Z = value == 0;
 }
 
-void Cpu::INX(MnemonicArgument const arg) {
+void Cpu::INX(MnemonicArgument const) {
     X++;
 
-	status.N = X & 0x80;
+	status.N = X & 0x80u;
 	status.Z = X == 0;
 }
 
-void Cpu::INY(MnemonicArgument const arg) {
+void Cpu::INY(MnemonicArgument const) {
     Y++;
 
-	status.N = Y & 0x80;
+	status.N = Y & 0x80u;
 	status.Z = Y == 0;
 }
 
@@ -380,7 +378,7 @@ void Cpu::JMP(MnemonicArgument const arg) {
 
 void Cpu::JSR(MnemonicArgument const arg) {
    
-	MemoryAddress nextAddress;
+	MemoryAddress nextAddress{0};
 	nextAddress = PC.address() + 2;
 	pushOnStack(nextAddress.LL);
 	pushOnStack(nextAddress.HH);
@@ -392,30 +390,30 @@ void Cpu::JSR(MnemonicArgument const arg) {
 void Cpu::LDA(MnemonicArgument const arg) {
     A = arg.readValue.value;
 
-	status.N = A & 0x80;
+	status.N = A & 0x80u;
 	status.Z = A == 0;
 }
 
 void Cpu::LDX(MnemonicArgument const arg) {
     X = arg.readValue.value;
 
-	status.N = X & 0x80;
+	status.N = X & 0x80u;
 	status.Z = X == 0;
 }
 
 void Cpu::LDY(MnemonicArgument const arg) {
     Y = arg.readValue.value;
 
-	status.N = Y & 0x80;
+	status.N = Y & 0x80u;
 	status.Z = Y == 0;
 }
 
 void Cpu::LSR(MnemonicArgument const arg) {
 	uint8_t value = arg.isAcu ? A : arg.readValue.value;
-	status.C = value & 0x01;
-	value >>= 1;
+	status.C = value & 0x01u;
+	value >>= 1u;
 	status.Z = value == 0;
-	status.N = 0;
+	status.N = false;
 
 	if (arg.isAcu)
 		A = value;
@@ -423,7 +421,7 @@ void Cpu::LSR(MnemonicArgument const arg) {
 		bus->Write(arg.targetAddress.address(), value);
 }
 
-void Cpu::NOP(MnemonicArgument const arg) {
+void Cpu::NOP(MnemonicArgument const) {
 
 }
 
@@ -431,36 +429,36 @@ void Cpu::ORA(MnemonicArgument const arg) {
     A |= arg.readValue.value;
 
 	status.Z = A == 0;
-	status.N = A & 0x80;
+	status.N = A & 0x80u;
 }
 
-void Cpu::PHA(MnemonicArgument const arg) {
+void Cpu::PHA(MnemonicArgument const) {
     pushOnStack(A);
 }
 
-void Cpu::PHP(MnemonicArgument const arg) {
+void Cpu::PHP(MnemonicArgument const) {
     pushOnStack(status.state());
 }
 
-void Cpu::PLA(MnemonicArgument const arg) {
+void Cpu::PLA(MnemonicArgument const) {
     A = pullFromStack();
 
 	status.Z = A == 0;
-	status.N = A & 0x80;
+	status.N = A & 0x80u;
 }
 
-void Cpu::PLP(MnemonicArgument const arg) {
+void Cpu::PLP(MnemonicArgument const) {
     status = pullFromStack();
 }
 
 void Cpu::ROL(MnemonicArgument const arg) {
 	uint8_t value = arg.isAcu ? A : arg.readValue.value;
 	uint8_t isCurrentCarrySet = status.C;
-	status.C = value & 0x80;
-	value <<= 1;
+	status.C = value & 0x80u;
+	value <<= 1u;
 	value += isCurrentCarrySet;
 	status.Z = value == 0;
-	status.N = value & 0x80;
+	status.N = value & 0x80u;
 
 	if (arg.isAcu)
 		A = value;
@@ -470,12 +468,12 @@ void Cpu::ROL(MnemonicArgument const arg) {
 
 void Cpu::ROR(MnemonicArgument const arg) {
 	uint8_t value = arg.isAcu ? A : arg.readValue.value;
-	uint8_t isCurrentCarrySet = status.C << 7;
-	status.C = value & 0x01;
-	value >>= 1;
+	uint8_t isCurrentCarrySet = status.C << 7u;
+	status.C = value & 0x01u;
+	value >>= 1u;
 	value += isCurrentCarrySet;
 	status.Z = value == 0;
-	status.N = value & 0x80;
+	status.N = value & 0x80u;
 
 	if (arg.isAcu)
 		A = value;
@@ -483,14 +481,14 @@ void Cpu::ROR(MnemonicArgument const arg) {
 		bus->Write(arg.targetAddress.address(), value);
 }
 
-void Cpu::RTI(MnemonicArgument const arg) {
+void Cpu::RTI(MnemonicArgument const) {
     status = pullFromStack();
     PC.HH = pullFromStack();
     PC.LL = pullFromStack();
 	_pcHasChanged = true;
 }
 
-void Cpu::RTS(MnemonicArgument const arg) {
+void Cpu::RTS(MnemonicArgument const) {
     PC.HH = pullFromStack();
     PC.LL = pullFromStack();
     PC++;
@@ -501,28 +499,28 @@ void Cpu::SBC(MnemonicArgument const arg) {
     uint8_t oldA = A;
 
 	uint16_t newValue = arg.readValue.value;
-    newValue ^= 0x00FF;
+    newValue ^= 0x00FFu;
 	newValue += A + status.C;
 
-    status.C = newValue > 0x00FF;
-    status.V = (~(oldA ^ arg.readValue.value) & (oldA ^ newValue)) & 0x0080;
+    status.C = newValue > 0x00FFu;
+    status.V = (~(oldA ^ arg.readValue.value) & (oldA ^ newValue)) & 0x0080u;
 
-    A = newValue & 0x00FF;
+    A = newValue & 0x00FFu;
 
     status.Z = A == 0;
-    status.N = A & 0x80;
+    status.N = A & 0x80u;
 }
 
-void Cpu::SEC(MnemonicArgument const arg) {
-    status.C = 1;
+void Cpu::SEC(MnemonicArgument const) {
+    status.C = true;
 }
 
-void Cpu::SED(MnemonicArgument const arg) {
-    status.D = 1;
+void Cpu::SED(MnemonicArgument const) {
+    status.D = true;
 }
 
-void Cpu::SEI(MnemonicArgument const arg) {
-    status.I = 1;
+void Cpu::SEI(MnemonicArgument const) {
+    status.I = true;
 }
 
 void Cpu::STA(MnemonicArgument const arg) {
@@ -537,43 +535,43 @@ void Cpu::STY(MnemonicArgument const arg) {
     bus->Write(arg.targetAddress.address(), Y);
 }
 
-void Cpu::TAX(MnemonicArgument const arg) {
+void Cpu::TAX(MnemonicArgument const) {
     X = A;
 
 	status.Z = X == 0;
-	status.N = X & 0x80;
+	status.N = X & 0x80u;
 }
 
-void Cpu::TAY(MnemonicArgument const arg) {
+void Cpu::TAY(MnemonicArgument const) {
     Y = A;
 
 	status.Z = Y == 0;
-	status.N = Y & 0x80;
+	status.N = Y & 0x80u;
 }
 
-void Cpu::TSX(MnemonicArgument const arg) {
+void Cpu::TSX(MnemonicArgument const) {
     X = S.offset;
 
 	status.Z = X == 0;
-	status.N = X & 0x80;
+	status.N = X & 0x80u;
 }
 
-void Cpu::TXA(MnemonicArgument const arg) {
+void Cpu::TXA(MnemonicArgument const) {
     A = X;
 
 	status.Z = A == 0;
-	status.N = A & 0x80;
+	status.N = A & 0x80u;
 }
 
-void Cpu::TXS(MnemonicArgument const arg) {
+void Cpu::TXS(MnemonicArgument const) {
     S.offset = X;
 }
 
-void Cpu::TYA(MnemonicArgument const arg) {
+void Cpu::TYA(MnemonicArgument const) {
     A = Y;
 
 	status.Z = A == 0;
-	status.N = A & 0x80;
+	status.N = A & 0x80u;
 }
 
 void Cpu::XXX(MnemonicArgument const arg) {

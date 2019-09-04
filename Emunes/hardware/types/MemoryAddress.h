@@ -14,12 +14,14 @@ public:
 	uint8_t HH;
 
 public:
-	inline uint16_t address() const{
+	[[nodiscard]] uint16_t address() const{
 		return LL + (HH << 8u);
 	}
 	
-	MemoryAddress& operator++ (int) {
-		return operator+=(1);
+	MemoryAddress operator++ (int) {
+        const MemoryAddress result(*this);
+	    *this = address()+1;
+		return result;
 	}
 
 	MemoryAddress& operator= (uint16_t const value) {

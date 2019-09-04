@@ -16,7 +16,7 @@ public:
 
 public:
 
-	StateFlags(uint8_t const state) {
+	explicit StateFlags(uint8_t const state) {
 		C = state & 0x01u;
 		Z = state & 0x02u;
 		I = state & 0x04u;
